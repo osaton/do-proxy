@@ -1,0 +1,15 @@
+name = "do-api"
+compatibility_date = "2022-11-26"
+
+[build.upload]
+format = "modules"
+main = "dist/index.mjs"
+
+[durable_objects]
+bindings = [
+  { name = "TEST_DO", class_name = "TestDO" } # Binding to our DurableObjectExample class
+]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["TestDO"]
