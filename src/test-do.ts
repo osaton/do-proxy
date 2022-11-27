@@ -2,10 +2,9 @@ import { DOStorage } from './do-storage';
 import { Env } from './index';
 
 export class TestDO extends DOStorage {
-  state: DurableObjectState;
   env: Env;
   testProp: string = 'yes';
-
+  state: DurableObjectState;
   constructor(state: DurableObjectState, env: Env) {
     super(state);
     this.state = state;

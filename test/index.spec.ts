@@ -1,27 +1,42 @@
 const { TEST_DO } = getMiniflareBindings();
 
 import { TestDO } from '../src/test-do';
+import { DOStorage } from '../src/do-storage';
 // Use beforeAll & beforeEach inside describe blocks to set up particular DB states for a set of tests
 describe('DOStorage', () => {
   it('Should handle class methods', async () => {
-    //expect(res).toEqual({ foo: 'yes' });
+    const testDo = TestDO.from<TestDO>(TEST_DO).get('test');
 
-    const testDo = TestDO.getApi<TestDO>(TEST_DO).get('test');
-
-    await testDo.setStorage('test2', 'moro', 'nääs');
-    const tota = await testDo.getStorage();
-    testDo.testProp;
+    await testDo.class.setStorage('test2', 'moro', 'nääs');
+    const tota = await testDo.class.getStorage();
   });
 
-  it('should handle storage methods', async () => {
-    const testDo = TestDO.getApi<TestDO>(TEST_DO).get('test');
-    await testDo.put('test', 'foo');
+  it('Should handle storage methods', async () => {
+    const testDoStub = TestDO.from<TestDO>(TEST_DO);
+    const testDo = testDoStub.get('test');
+    const testDo2 = testDoStub.get('test2');
 
-    const res = await testDo.get('test');
+    await testDo.storage.put('test', 'foo');
+    await testDo2.storage.put('test', 'bar');
+    const res = await testDo.storage.get('test');
+    const res2 = await testDo2.storage.get('test');
+
     expect(res).toEqual('foo');
+    expect(res2).toEqual('bar');
+  });
 
-    await testDo.deleteAll();
-    expect(await testDo.get('test')).toEqual(undefined);
+  it('Should be possible to use it as standalone', async () => {
+    const storage = DOStorage.from(TEST_DO);
+    const test = storage.get('test');
+
+    await test.storage.put('test2', {
+      foo: 'bar',
+    });
+    const res = await test.storage.get('test2');
+
+    expect(res).toEqual({
+      foo: 'bar',
+    });
   });
 });
 
