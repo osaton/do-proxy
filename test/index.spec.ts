@@ -4,6 +4,21 @@ import { TestDO } from '../src/test-do';
 import { DOStorage } from '../src/do-storage';
 // Use beforeAll & beforeEach inside describe blocks to set up particular DB states for a set of tests
 describe('DOStorage', () => {
+  it('Should be able to get instance with all id types', async () => {
+    const id = TEST_DO.idFromName('test');
+    const fromId = DOStorage.from(TEST_DO).getById(id);
+    const fromString = DOStorage.from(TEST_DO).getByString(id.toString());
+    const fromName = DOStorage.from(TEST_DO).get('test');
+
+    await fromName.storage.put('get-methods', true);
+    const res = await Promise.all([
+      fromId.storage.get('get-methods'),
+      fromString.storage.get('get-methods'),
+      fromName.storage.get('get-methods'),
+    ]);
+
+    expect(res).toEqual([true, true, true]);
+  });
   it('Should handle class methods', async () => {
     const testDo = TestDO.from<TestDO>(TEST_DO).get('test');
 

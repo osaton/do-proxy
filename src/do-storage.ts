@@ -161,10 +161,19 @@ export class DOStorage {
 
   static from<T extends DOStorage>(binding: DurableObjectNamespace) {
     const classInstance = new this({} as DurableObjectState) as any;
-
     return {
       get(name: string) {
         const stub = binding.get(binding.idFromName(name));
+        const storage = getProxyStorage(storageMethods, stub);
+        return getProxy<T>(stub, storage, classInstance);
+      },
+      getById(id: DurableObjectId) {
+        const stub = binding.get(id);
+        const storage = getProxyStorage(storageMethods, stub);
+        return getProxy<T>(stub, storage, classInstance);
+      },
+      getByString(id: string) {
+        const stub = binding.get(binding.idFromString(id));
         const storage = getProxyStorage(storageMethods, stub);
         return getProxy<T>(stub, storage, classInstance);
       },
