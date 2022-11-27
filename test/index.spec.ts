@@ -53,6 +53,30 @@ describe('DOStorage', () => {
       foo: 'bar',
     });
   });
+
+  it('Should be able to batch commands', async () => {
+    const storage = DOStorage.from(TEST_DO);
+    const test = storage.get('test');
+
+    const res = await test.batch(() => {
+      return [test.storage.put('test-batch', 'first'), test.storage.get('test-batch')];
+    });
+    expect(res).toEqual([null, 'first']);
+  });
+
+  /*
+  it('Should throw if returned callback array contains invalid data', async () => {
+    const storage = DOStorage.from(TEST_DO);
+    const test = storage.get('test');
+
+    const res = expect(() => {
+      test.batch(() => {
+        return [test.storage.put('test-batch', 'first'), () => {}, test.storage.get('test-batch')];
+      });
+    }).toThrow(
+      'DOStorageInstance.batch: Returned array has invalid job at index 1. Only `DOStorageInstance` methods supported.'
+    );
+  });*/
 });
 
 export {};

@@ -54,23 +54,14 @@ function getRequestConfig(type: RequestConfigType, prop: PropertyKey, args: any[
   };
 }
 
-function getProxyStorage(storageMethods: string[], stub: DurableObjectStub) {
-  const obj: Record<string, () => {}> = {};
-  storageMethods.forEach((methodName) => {
-    obj[methodName] = function (...args) {
-      const config = getRequestConfig('storage', methodName, args);
-      return doFetch(stub, config);
-    };
-  });
-
-  return obj as unknown as Storage;
-}
-
 async function handleStorageFetch(state: DurableObjectState, config: RequestConfig) {
   return (state.storage as any)[config.prop](...config.args);
 }
 
-async function doFetch(stub: DurableObjectStub, config: RequestConfig): Promise<unknown> {
+async function doFetch(
+  stub: DurableObjectStub,
+  config: RequestConfig | RequestConfig[]
+): Promise<unknown> {
   const res = (await stub
     .fetch(
       new Request('https://do-api/', {
@@ -83,13 +74,58 @@ async function doFetch(stub: DurableObjectStub, config: RequestConfig): Promise<
   return res.data;
 }
 
-function getProxy<T>(stub: DurableObjectStub, storage: Storage, classInstance: any) {
+function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig = false) {
+  let proxyMode = 'execute';
+  let captured: RequestConfig[] = [];
+
+  function getProxyStorage() {
+    const obj: Record<string, () => {}> = {};
+    storageMethods.forEach((methodName) => {
+      obj[methodName] = function (...args) {
+        const config = getRequestConfig('storage', methodName, args);
+        if (proxyMode === 'batch') {
+          return config;
+        }
+        return doFetch(stub, config);
+      };
+    });
+
+    return obj as unknown as Storage;
+  }
+
+  const storage = getProxyStorage();
   return new Proxy(
     {},
     {
-      get: (target, prop, receiver) => {
+      get: (target, prop) => {
         // Handle class methods
+        if (prop === 'batch') {
+          return async function (jobs: () => {}) {
+            // Switching to batch mode, which skips fetching and only returns configs for our jobs
+            captured = [];
+            proxyMode = 'batch';
+            const configs = await jobs();
 
+            if (!Array.isArray(configs)) {
+              throw Error(
+                `\`batch\` callback should return array of \`DOStorage\` operations, got: ${typeof configs}`
+              );
+            }
+
+            configs.forEach((cfg, index) => {
+              if (!cfg?.type) {
+                throw Error(
+                  `DOStorageInstance.batch: Returned array has invalid job at index ${index}. Only \`DOStorageInstance\` methods supported.`
+                );
+              }
+            });
+
+            proxyMode = 'execute';
+
+            // Handle all jobs with one fetch
+            return doFetch(stub, configs);
+          };
+        }
         if (prop === 'class') {
           return new Proxy(
             {},
@@ -99,6 +135,9 @@ function getProxy<T>(stub: DurableObjectStub, storage: Storage, classInstance: a
                 if (type === 'function') {
                   return async function (...args: any[]) {
                     const config = getRequestConfig('function', prop, args);
+                    if (proxyMode === 'batch') {
+                      return config;
+                    }
                     return doFetch(stub, config);
                   };
                 }
@@ -125,6 +164,7 @@ function getProxy<T>(stub: DurableObjectStub, storage: Storage, classInstance: a
 
 export interface DOStorageInstance<T> {
   storage: Storage;
+  batch: (callback: () => unknown[]) => Promise<unknown[]>;
   class: T;
 }
 
@@ -136,7 +176,16 @@ export class DOStorage {
   }
 
   private async fetch(request: Request) {
-    let config: null | RequestConfig = null;
+    let config: null | RequestConfig | RequestConfig[] = null;
+
+    const runFetchConfig = async (config: RequestConfig) => {
+      if (config.type === 'function') {
+        return await (this as any)[config.prop](...config.args);
+      } else if (config.type === 'storage') {
+        return await handleStorageFetch(this.#state, config);
+      }
+    };
+
     try {
       config = (await request.json()) as RequestConfig;
     } catch (e) {}
@@ -148,10 +197,14 @@ export class DOStorage {
     }
 
     let data: any = undefined;
-    if (config.type === 'function') {
-      data = await (this as any)[config.prop](...config.args);
-    } else if (config.type === 'storage') {
-      data = await handleStorageFetch(this.#state, config);
+
+    if (Array.isArray(config)) {
+      data = [];
+      for (const cfg of config) {
+        data.push(await runFetchConfig(cfg));
+      }
+    } else {
+      data = await runFetchConfig(config);
     }
 
     return Response.json({
@@ -164,18 +217,15 @@ export class DOStorage {
     return {
       get(name: string) {
         const stub = binding.get(binding.idFromName(name));
-        const storage = getProxyStorage(storageMethods, stub);
-        return getProxy<T>(stub, storage, classInstance);
+        return getProxy<T>(stub, classInstance);
       },
       getById(id: DurableObjectId) {
         const stub = binding.get(id);
-        const storage = getProxyStorage(storageMethods, stub);
-        return getProxy<T>(stub, storage, classInstance);
+        return getProxy<T>(stub, classInstance);
       },
       getByString(id: string) {
         const stub = binding.get(binding.idFromString(id));
-        const storage = getProxyStorage(storageMethods, stub);
-        return getProxy<T>(stub, storage, classInstance);
+        return getProxy<T>(stub, classInstance);
       },
     };
   }
