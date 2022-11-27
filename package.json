@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "type": "module",
   "module": "./dist/index.mjs",
+  "licence": "MIT",
+  "author": "osaton <github@osasto.dev>",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1",
     "@types/jest": "^29.1.2",
