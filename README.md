@@ -106,9 +106,8 @@ await todos.batch(() => [
   todos.class.addTodo('todo1'),
   todos.class.addTodo('todo2'),
   todos.class.addTodo('todo3'),
-  todos.class.addTodo('todo4'),
   todos.storage.list()
-])
+]) // => [null, null, null, Map(4) { ... }]
 ```
 
 ## Batch
@@ -122,27 +121,24 @@ const counter = Counter.from<Counter>(env.Counter).get('counter1');
 
 const res = await counter.batch(() => [
   counter.class.increment(),
-  //todo: parallel support
-  // [counter.storage.put('name', 'John'), counter.storage.put('email', 'john@example.com')]
-  // counter.storage.list(),
-  // todo maybe:
-  // [job].setLimit(3)
   counter.class.increment(),
   counter.storage.deleteAll(),
   counter.class.increment(),
 ]); // => [1, 2, null, 1]
 ```
 
-## `DOStorage.from` => `todo:StubInitiator`
+## `static DOStorage.from(DO:DurableObjectNamespace):DOStorageNamespace`
 
-Pass in the related durable object namespace from env variable.
+Takes `DurableObjectNamespace` as argument and returns `DOStorageNamespace`.
 
-## Different methods to initiate stub proxy => `todo:DOStorageProxy`
+## `DOStorageNamespace`
 
-`get`: Get by name (`string`)
-`getById`: Get by `DurableObjectId`
-`getByString`: Get by stringified `DurableObjectId`
+methods:
+
+`get(name:string): DOStorageProxy`: Get by name.
+`getById(id:DurableObjectId)`: Get by `DurableObjectId`
+`getByString(id: string)`: Get by stringified `DurableObjectId`
 
 ## Limitations
 
-Remember that we are still doing fetching even if it is done in the background, so everything sent to `class` and `storage` methods must be JSON serializable. You can go crazy inside the class methods though.
+Remember that we are still doing fetch requests even if it is done in the background, so everything sent to `class` and `storage` methods must be JSON serializable.
