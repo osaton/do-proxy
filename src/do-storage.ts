@@ -74,7 +74,18 @@ async function doFetch(
         body: JSON.stringify(config),
       })
     )
-    .then((res) => res.json())) as FetchResponse;
+    .then((res) => res.text())
+    .then((text: string) =>
+      JSON.parse(text, function reviver(key, value) {
+        // Convert received map data back to Map
+        if (typeof value === 'object' && value !== null) {
+          if (value.__dataType === 'Map') {
+            return new Map(value.value);
+          }
+        }
+        return value;
+      })
+    )) as FetchResponse;
 
   return res.data;
 }
@@ -210,9 +221,30 @@ export class DOStorage {
       data = await runFetchConfig(config);
     }
 
-    return Response.json({
-      data,
-    });
+    return new Response(
+      JSON.stringify(
+        {
+          data,
+        },
+        function replacer(_key, value) {
+          // Handle Maps. At least `state.storage.list()` returns one
+          // We'll convert these back to Map when handling response
+          if (value instanceof Map) {
+            return {
+              __dataType: 'Map',
+              value: Array.from(value.entries()),
+            };
+          } else {
+            return value;
+          }
+        }
+      ),
+      {
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+    );
   }
 
   static from<T extends DOStorage>(binding: DurableObjectNamespace): DOStorageNamespace<T> {
