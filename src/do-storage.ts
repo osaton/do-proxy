@@ -1,5 +1,16 @@
 import { DurableObjectGetAlarmOptions, DurableObjectPutOptions } from '@cloudflare/workers-types';
 const MODULE_NAME = 'do-storage';
+const storageMethods = [
+  'delete',
+  'deleteAlarm',
+  'deleteAll',
+  'get',
+  'getAlarm',
+  'list',
+  'put',
+  'setAlarm',
+  'sync',
+];
 
 interface RequestConfig {
   type: RequestConfigType;
@@ -13,19 +24,13 @@ interface FetchResponse {
   data: any;
 }
 
-const storageMethods = [
-  'delete',
-  'deleteAlarm',
-  'deleteAll',
-  'get',
-  'getAlarm',
-  'list',
-  'put',
-  'setAlarm',
-  'sync',
-];
+export interface DOStorageNamespace<T> {
+  get: (name: string) => DOStorageProxy<T>;
+  getById: (id: DurableObjectId) => DOStorageProxy<T>;
+  getByString: (id: string) => DOStorageProxy<T>;
+}
 
-interface Storage {
+export interface Storage {
   delete: (key: string, options?: DurableObjectPutOptions | undefined) => Promise<boolean>;
   deleteAlarm: () => {};
   deleteAll: (options?: DurableObjectPutOptions | undefined) => Promise<void>;
@@ -64,7 +69,7 @@ async function doFetch(
 ): Promise<unknown> {
   const res = (await stub
     .fetch(
-      new Request('https://do-api/', {
+      new Request('https://do-storage/', {
         method: 'POST',
         body: JSON.stringify(config),
       })
@@ -76,7 +81,6 @@ async function doFetch(
 
 function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig = false) {
   let proxyMode = 'execute';
-  let captured: RequestConfig[] = [];
 
   function getProxyStorage() {
     const obj: Record<string, () => {}> = {};
@@ -102,7 +106,6 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
         if (prop === 'batch') {
           return async function (jobs: () => {}) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
-            captured = [];
             proxyMode = 'batch';
             const configs = await jobs();
 
@@ -115,7 +118,7 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
             configs.forEach((cfg, index) => {
               if (!cfg?.type) {
                 throw Error(
-                  `DOStorageInstance.batch: Returned array has invalid job at index ${index}. Only \`DOStorageInstance\` methods supported.`
+                  `DOStorageProxy.batch: Returned array has invalid job at index ${index}. Only \`DOStorageProxy\` methods supported.`
                 );
               }
             });
@@ -159,10 +162,10 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
         return true;
       },
     }
-  ) as unknown as DOStorageInstance<T>;
+  ) as unknown as DOStorageProxy<T>;
 }
 
-export interface DOStorageInstance<T> {
+export interface DOStorageProxy<T> {
   storage: Storage;
   batch: (callback: () => unknown[]) => Promise<unknown[]>;
   class: T;
@@ -212,7 +215,7 @@ export class DOStorage {
     });
   }
 
-  static from<T extends DOStorage>(binding: DurableObjectNamespace) {
+  static from<T extends DOStorage>(binding: DurableObjectNamespace): DOStorageNamespace<T> {
     const classInstance = new this({} as DurableObjectState) as any;
     return {
       get(name: string) {

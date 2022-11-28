@@ -1,4 +1,4 @@
-import { DOStorage } from './do-storage';
+import { DOStorage } from '../src/do-storage';
 import { Env } from './index';
 
 export class TestDO extends DOStorage {

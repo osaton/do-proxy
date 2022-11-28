@@ -1,6 +1,6 @@
 const { TEST_DO } = getMiniflareBindings();
 
-import { TestDO } from '../src/test-do';
+import { TestDO } from '../worker/test-do';
 import { DOStorage } from '../src/do-storage';
 // Use beforeAll & beforeEach inside describe blocks to set up particular DB states for a set of tests
 describe('DOStorage', () => {
