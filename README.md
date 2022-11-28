@@ -2,54 +2,23 @@
 
 This library handles the `fetch` request building / routing for Cloudflare Durable Objects and gives easy access to Durable Object instance's state storage and class methods.
 
-## Accessing `storage` methods
-
-`DOStorage` can be used as Durable Object class as is. It gives you access to Durable Object instance's Transactional storage API methods (excluding `transaction` which can't be proxied because of JSON serialization).
-
-Simple example where `DOStorage` is used as `Counter` class for Durable Object `COUNTER`:
+Usage:
 
 ```ts
-import { DOStorage as Counter } from 'do-storage';
-export { Counter };
+import {DOStorage} from 'do-storage';
 
-export interface Env {
-  COUNTER: DurableObjectNamespace;
-}
+// Can be used as is for Durable Objects
+export { DOStorage as Counter1 };
 
-export default {
-  async fetch(request: Request, env: Env) {
-    const counter = Counter.from(env.COUNTER).get('my-counter');
-
-    const count = (await counter.storage.get('counter')) || 0;
-    count++;
-    await counter.storage.put('counter', count);
-
-    return Response.json({
-      count,
-    });
-  },
-};
-```
-
-This is okay for testing and for object's that don't get lot of traffic, but remember that each storage method call initiates new fetch request to the durable object's instance. If you want to minimize requests you might want to extend `DOStorage` class and create methods that do the hard work.
-
-Class methods can be accessed from `DOStorageProxy`'s `class` property:
-
-```ts
-import { DOStorage } from './do-storage';
-
-export interface Env {
-  COUNTER: DurableObjectNamespace;
-}
-
-class Counter extends DOStorage {
-  state: DurableObjectState;
+// Or you can extend it
+export class Counter2 extends DOstorage {
+  this.state: DurableObjectState;
   constructor(state: DurableObjectState) {
-    super(state); // Only thing required by `DOStorage`
+    super(state);
     this.state = state;
   }
 
-  async increment() {
+  increment() {
     let count = ((await this.state.storage.get('counter')) as number) ?? 0;
     count++;
     await this.state.storage.put('counter', count);
@@ -57,24 +26,94 @@ class Counter extends DOStorage {
   }
 }
 
+export interface Env {
+  COUNTER1: DurableObjectNamespace;,
+  COUNTER2: DurableObjectNamespace;
+}
+
 export default {
   async fetch(request: Request, env: Env) {
-    const counter = Counter.from<Counter>(env.COUNTER).get('my-counter');
-    // Proxy fetch to Durable Object instance's `increment` method
-    const count = await counter.class.increment();
+    const counter1 = Counter.from(env.COUNTER1).get('my-counter');
+    // You can only use storage methods if `DOStorage` class is used as-is
+    const count1 = (await counter1.storage.get('counter')) || 0;
+    count1++;
+    await counter1.storage.put('counter', count1);
+
+
+    const counter = Counter2.from<Counter>(env.COUNTER2).get('my-counter');
+    // By extending `DOStorage` you can also proxy calls to class methods
+    const count2 = await counter.class.increment();
 
     return Response.json({
-      count,
+      count1,
+      count2
     });
   },
 };
 ```
 
-By extending the `DOStorage` you can access class methods from the `DOStorageProxy`'s `class` property.
+## Accessing `storage` methods
+
+`DOStorage` can be used as Durable Object class as is. It gives you access to Durable Object instance's Transactional storage API methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
+
+Simple example where `DOStorage` is used as `Counter` class for Durable Object `COUNTER`:
+
+```ts
+const account = Account.from(env.ACCOUNT).get('my-account');
+await account.storage.put('name', 'John');
+await account.storage.put('email', 'john@example.com');
+
+// Or with single fetch request
+const [,,list] = await account.batch(() => [
+  account.storage.put('name', 'John'),
+  account.storage.put('email', 'john@example.com')
+  account.storage.list()
+]);
+```
+
+This is okay for testing and for objects that don't get lot of traffic, but remember that each storage method call initiates new fetch request to the DO instance, except for `batch` commands which are done with one fetch. If you want to minimize requests you might want to extend `DOStorage` class and create methods that do the more complex stuff.
+
+Class methods can be accessed from `DOStorageProxy`'s `class` property:
+
+```ts
+class Account extends DOStorage {
+  this.state: DurableObjectState;
+  constructor(state:DurableObjectState) {
+    super(state);
+    this.state = state;
+  }
+
+  async add(name, email) {
+    this.state.storage.put('account', {
+      name,
+      email
+    });
+  }
+}
+
+// ....
+// Remember to add the `<YOUR_CLASS>` part so you get types for `class` methods
+const account = Account.from<Account>(env.ACCOUNT).get('my-account');
+// Only limitations is that arguments you call the `class` methods with must be JSON serializable as they are sent with the request
+const data = await account.class.add({
+  name: 'John',
+  email: 'john@example.com'
+});
+
+// You can utilize class methods also with batch
+const todos = Todo.from<Todo>(env.TODO).get('my-todos');
+await todos.batch(() => [
+  todos.class.addTodo('todo1'),
+  todos.class.addTodo('todo2'),
+  todos.class.addTodo('todo3'),
+  todos.class.addTodo('todo4'),
+  todos.storage.list()
+])
+```
 
 ## Batch
 
-If you still need to invoke Durable Object instance's multiple times, `DOStorageProxy` has a `batch` method which allows you to run multiple method calls inside one fetch request.
+If you need to invoke Durable Object instance's multiple times, `DOStorageProxy` has a `batch` method which allows you to run multiple method calls inside one fetch request.
 
 Method calls passed to `batch` will be run in sequence.
 
@@ -83,6 +122,11 @@ const counter = Counter.from<Counter>(env.Counter).get('counter1');
 
 const res = await counter.batch(() => [
   counter.class.increment(),
+  //todo: parallel support
+  // [counter.storage.put('name', 'John'), counter.storage.put('email', 'john@example.com')]
+  // counter.storage.list(),
+  // todo maybe:
+  // [job].setLimit(3)
   counter.class.increment(),
   counter.storage.deleteAll(),
   counter.class.increment(),
