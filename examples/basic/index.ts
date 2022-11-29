@@ -24,42 +24,53 @@ class Todo extends DOProxy {
   }
 
   alarm() {
-    console.log('Remember your todos!');
+    this.state.storage.put('last-scheduled-alarm', Date.now());
   }
 }
 
 export default {
   async fetch(req: Request, env: any) {
+    const url = new URL(req.url);
     const todos = Todo.from<Todo>(env.TODO).get('my-todos');
-    // Single
-    const id = await todos.class.add('basic todo');
-    const todo = await todos.class.get(id);
 
-    // Batch
-    const batchRes = await todos.batch(() => [
-      todos.class.add('batched todo'),
-      // set alarm in 3 seconds
-      todos.storage.setAlarm(Date.now() + 3000),
-      todos.storage.list(),
-    ]);
+    if (url.pathname === '/') {
+      // Single
+      const id = await todos.class.add('basic todo');
+      const todo = await todos.class.get(id);
 
-    const list = batchRes.pop();
+      // Batch
+      const batchRes = await todos.batch(() => [
+        todos.class.add('batched todo'),
+        // set alarm in 3 seconds
+        todos.storage.setAlarm(Date.now() + 3000),
+        todos.storage.list(),
+      ]);
 
-    return new Response(
-      JSON.stringify(
+      const list = batchRes.pop();
+
+      return new Response(
+        JSON.stringify(
+          {
+            id,
+            todo,
+            list: Object.fromEntries(list as Map<string, string>),
+          },
+          null,
+          2
+        ),
         {
-          id,
-          todo,
-          list: Object.fromEntries(list as Map<string, string>),
-        },
-        null,
-        2
-      ),
-      {
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+          headers: {
+            'content-type': 'application/json',
+          },
+        }
+      );
+    } else if (url.pathname === '/delete-all') {
+      await todos.storage.deleteAll();
+      return Response.json({
+        ok: true,
+      });
+    }
+
+    return new Response('Not found', { status: 404 });
   },
 };

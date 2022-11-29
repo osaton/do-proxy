@@ -1,4 +1,4 @@
-name = ""
+name = "do-proxy-basic-example"
 compatibility_date = "2022-11-29"
 main = "index.ts"
 
