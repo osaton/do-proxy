@@ -1,114 +1,86 @@
 # Durable Object Proxy
 
-This library handles the `fetch` request building / routing for Cloudflare Durable Objects and gives easy access to Durable Object instance's state storage and class methods.
+This library handles the `fetch` request building / routing for [Cloudflare Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects/) and gives easy access to Durable Object instance's state storage and class methods.
 
-Usage:
+## Install
+
+```text
+npm install do-proxy --save-dev
+```
+
+## Usage
+
+You can use `DOProxy` as is. This enables you use [`storage`](#storage-methods) methods.
+
+Here we expect you to have DO class `Todo` bound to `TODO` inside `wrangler.toml`:
 
 ```ts
-import {DOProxy} from 'do-proxy';
-
-// Can be used as is for Durable Objects
-export { DOProxy as Counter1 };
-
-// Or you can extend it
-export class Counter2 extends DOProxy {
-  this.state: DurableObjectState;
-  constructor(state: DurableObjectState) {
-    super(state);
-    this.state = state;
-  }
-
-  increment() {
-    let count = ((await this.state.storage.get('counter')) as number) ?? 0;
-    count++;
-    await this.state.storage.put('counter', count);
-    return count;
-  }
-}
-
-export interface Env {
-  COUNTER1: DurableObjectNamespace;,
-  COUNTER2: DurableObjectNamespace;
-}
-
+import { DOProxy } from 'do-proxy';
+export { DOProxy as Todo };
 export default {
-  async fetch(request: Request, env: Env) {
-    const counter1 = Counter.from(env.COUNTER1).get('my-counter');
-    // You can only use storage methods if `DOProxy` class is used as-is
-    const count1 = (await counter1.storage.get('counter')) || 0;
-    count1++;
-    await counter1.storage.put('counter', count1);
-
-
-    const counter = Counter2.from<Counter>(env.COUNTER2).get('my-counter');
-    // By extending `DOProxy` you can also proxy calls to class methods
-    const count2 = await counter.class.increment();
-
-    return Response.json({
-      count1,
-      count2
-    });
+  async fetch(req: Request, env: any) {
+    const todo = DOProxy.from(env.TODO).get('my-todo');
+    await todo.storage.put('todo:1', 'has to be done');
+    const list = Object.fromEntries(await todo.storage.list());
+    return Response.json(list);
   },
 };
 ```
 
-## Accessing `storage` methods
-
-`DOProxy` can be used as Durable Object class as is. It gives you access to Durable Object instance's Transactional storage API methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
-
-Simple example where `DOProxy` is used as `Counter` class for Durable Object `COUNTER`:
+Or you can extend it, which enables you to call class methods via `class` property:
 
 ```ts
-const account = Account.from(env.ACCOUNT).get('my-account');
-await account.storage.put('name', 'John');
-await account.storage.put('email', 'john@example.com');
+import { DOProxy } from 'do-proxy';
 
-// Or with single fetch request
-const [,,list] = await account.batch(() => [
-  account.storage.put('name', 'John'),
-  account.storage.put('email', 'john@example.com')
-  account.storage.list()
-]);
-```
-
-This is okay for testing and for objects that don't get lot of traffic, but remember that each storage method call initiates new fetch request to the DO instance, except for `batch` commands which are done with one fetch. If you want to minimize requests you might want to extend `DOProxy` class and create methods that do the more complex stuff.
-
-Class methods can be accessed from `DOProxyInstance`'s `class` property:
-
-```ts
-class Account extends DOProxy {
-  this.state: DurableObjectState;
-  constructor(state:DurableObjectState) {
+class Todo extends DOProxy {
+  state: DurableObjectState;
+  constructor(state: DurableObjectState) {
     super(state);
     this.state = state;
   }
+  async add(todo: string) {
+    const id = Math.ceil(Math.random() * 100);
+    this.state.storage.put(`todo:${id}`, todo);
+    return id;
+  }
 
-  async add(name, email) {
-    this.state.storage.put('account', {
-      name,
-      email
-    });
+  async get(id: number) {
+    return this.state.storage.get(`todo:${id}`);
   }
 }
-
-// ....
-// Remember to add the `<YOUR_CLASS>` part so you get types for `class` methods
-const account = Account.from<Account>(env.ACCOUNT).get('my-account');
-// Only limitations is that arguments you call the `class` methods with must be JSON serializable as they are sent with the request
-const data = await account.class.add({
-  name: 'John',
-  email: 'john@example.com'
-});
-
-// You can utilize class methods also with batch
-const todos = Todo.from<Todo>(env.TODO).get('my-todos');
-await todos.batch(() => [
-  todos.class.addTodo('todo1'),
-  todos.class.addTodo('todo2'),
-  todos.class.addTodo('todo3'),
-  todos.storage.list()
-]) // => [null, null, null, Map(4) { ... }]
+export default {
+  async fetch(req: Request, env: any) {
+    // Remember to add the `<YourClass>` part so you get types for `class` methods
+    const todos = Todo.from<Todo>(env.TODO).get('my-todos');
+    const id = await todos.class.add('has to be done');
+    const todo = await todos.class.get(id);
+    return Response.json({
+      id,
+      todo,
+    });
+  },
+};
+export { Todo };
 ```
+
+You can also utilize the [`batch`](#batch) method which allows you to run multiple methods with one fetch request to DO instance:
+
+```ts
+// See previous example for `Todo` details
+const [, , list] = await todos.batch(() => [
+  todos.class.add('my todo'),
+  todos.class.add('my other todo'),
+  todos.storage.list(),
+]);
+
+return Response.json(Object.fromEntries(list as Map<string, string>));
+```
+
+## `storage` methods
+
+`DOProxy` can be used as Durable Object class as is. It gives you access to Durable Object instance's [Transactional storage API](https://developers.cloudflare.com/workers/runtime-apis/durable-objects/#transactional-storage-api) methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
+
+Available methods: `DOProxyInstance.storage.get|put|delete|deleteAll|list|getAlarm|setAlarm|deleteAlarm|sync`
 
 ## Batch
 
@@ -119,7 +91,7 @@ Method calls passed to `batch` will be run in sequence.
 ```ts
 const counter = Counter.from<Counter>(env.Counter).get('counter1');
 
-const res = await counter.batch(() => [
+await counter.batch(() => [
   counter.class.increment(),
   counter.class.increment(),
   counter.storage.deleteAll(),
@@ -127,7 +99,7 @@ const res = await counter.batch(() => [
 ]); // => [1, 2, null, 1]
 ```
 
-## `static DOProxy.from(DO:DurableObjectNamespace):DOProxyNamespace`
+## DOProxy.from
 
 Takes `DurableObjectNamespace` as argument and returns `DOProxyNamespace`.
 
@@ -135,9 +107,9 @@ Takes `DurableObjectNamespace` as argument and returns `DOProxyNamespace`.
 
 methods:
 
-`get(name:string): DOProxyInstance`: Get by name.
-`getById(id:DurableObjectId): DOProxyInstance`: Get by `DurableObjectId`
-`getByString(id: string): DOProxyInstance`: Get by stringified `DurableObjectId`
+- `get(name:string): DOProxyInstance`: Get by name.
+- `getById(id:DurableObjectId): DOProxyInstance`: Get by `DurableObjectId`
+- `getByString(id: string): DOProxyInstance`: Get by stringified `DurableObjectId`
 
 ## Limitations
 
