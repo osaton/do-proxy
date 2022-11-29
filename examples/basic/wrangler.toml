@@ -1,0 +1,12 @@
+name = ""
+compatibility_date = "2022-11-29"
+main = "index.ts"
+
+[durable_objects]
+bindings = [
+  {name = "TODO", class_name = "Todo"},
+]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["Todo"]
