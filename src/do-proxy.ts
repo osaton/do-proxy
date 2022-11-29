@@ -90,6 +90,14 @@ async function doFetch(
   return res.data;
 }
 
+async function resolveConfigs(configs: any[]) {
+  const resolved = [];
+  for (const cfg of configs) {
+    resolved.push(await Promise.resolve(cfg));
+  }
+  return resolved;
+}
+
 function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig = false) {
   let proxyMode = 'execute';
 
@@ -115,11 +123,10 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
       get: (target, prop) => {
         // Handle class methods
         if (prop === 'batch') {
-          return async function (jobs: () => {}) {
+          return async function (jobs: () => any[]) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
             proxyMode = 'batch';
-            const configs = await jobs();
-
+            const configs = await resolveConfigs(await jobs());
             if (!Array.isArray(configs)) {
               throw Error(
                 `\`batch\` callback should return array of \`DOProxyInstance\` operations, got: ${typeof configs}`

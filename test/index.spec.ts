@@ -22,8 +22,9 @@ describe('DOProxy', () => {
   it('Should handle class methods', async () => {
     const testDo = TestDO.from<TestDO>(TEST_DO).get('test');
 
-    await testDo.class.setStorage('test2', 'moro', 'nääs');
-    const tota = await testDo.class.getStorage();
+    await testDo.class.setStorage('foo', 'bar', 'baz');
+    const res = await testDo.class.getStorage();
+    expect(res).toEqual('foobarbaz');
   });
 
   it('Should handle storage methods', async () => {
@@ -54,7 +55,7 @@ describe('DOProxy', () => {
     });
   });
 
-  it('Should be able to batch commands', async () => {
+  it('Should be able to batch commands with `storage` methods', async () => {
     const storage = DOProxy.from(TEST_DO);
     const test = storage.get('test');
 
@@ -62,6 +63,19 @@ describe('DOProxy', () => {
       return [test.storage.put('test-batch', 'first'), test.storage.get('test-batch')];
     });
     expect(res).toEqual([null, 'first']);
+  });
+
+  it('Should be able to batch commands with `class` methods', async () => {
+    const testDo = TestDO.from<TestDO>(TEST_DO).get('test');
+
+    const res = await testDo.batch(() => [
+      testDo.class.setStorage('foo', 'bar', 'baz'),
+      testDo.storage.list(),
+    ]);
+
+    const map = new Map();
+    map.set('test', 'foobarbaz');
+    expect(res).toEqual([null, map]);
   });
 
   /*
