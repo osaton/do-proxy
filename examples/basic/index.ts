@@ -24,6 +24,7 @@ class Todo extends DOProxy {
   }
 
   alarm() {
+    console.log('Remember your todos!');
     this.state.storage.put('last-scheduled-alarm', Date.now());
   }
 }
