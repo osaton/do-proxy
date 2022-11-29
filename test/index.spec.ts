@@ -1,14 +1,14 @@
 const { TEST_DO } = getMiniflareBindings();
 
 import { TestDO } from '../worker/test-do';
-import { DOStorage } from '../src/do-storage';
+import { DOProxy } from '../src/do-proxy';
 // Use beforeAll & beforeEach inside describe blocks to set up particular DB states for a set of tests
-describe('DOStorage', () => {
+describe('DOProxy', () => {
   it('Should be able to get instance with all id types', async () => {
     const id = TEST_DO.idFromName('test');
-    const fromId = DOStorage.from(TEST_DO).getById(id);
-    const fromString = DOStorage.from(TEST_DO).getByString(id.toString());
-    const fromName = DOStorage.from(TEST_DO).get('test');
+    const fromId = DOProxy.from(TEST_DO).getById(id);
+    const fromString = DOProxy.from(TEST_DO).getByString(id.toString());
+    const fromName = DOProxy.from(TEST_DO).get('test');
 
     await fromName.storage.put('get-methods', true);
     const res = await Promise.all([
@@ -41,7 +41,7 @@ describe('DOStorage', () => {
   });
 
   it('Should be possible to use it as standalone', async () => {
-    const storage = DOStorage.from(TEST_DO);
+    const storage = DOProxy.from(TEST_DO);
     const test = storage.get('test');
 
     await test.storage.put('test2', {
@@ -55,7 +55,7 @@ describe('DOStorage', () => {
   });
 
   it('Should be able to batch commands', async () => {
-    const storage = DOStorage.from(TEST_DO);
+    const storage = DOProxy.from(TEST_DO);
     const test = storage.get('test');
 
     const res = await test.batch(() => {
@@ -66,7 +66,7 @@ describe('DOStorage', () => {
 
   /*
   it('Should throw if returned callback array contains invalid data', async () => {
-    const storage = DOStorage.from(TEST_DO);
+    const storage = DOProxy.from(TEST_DO);
     const test = storage.get('test');
 
     const res = expect(() => {
@@ -74,7 +74,7 @@ describe('DOStorage', () => {
         return [test.storage.put('test-batch', 'first'), () => {}, test.storage.get('test-batch')];
       });
     }).toThrow(
-      'DOStorageInstance.batch: Returned array has invalid job at index 1. Only `DOStorageInstance` methods supported.'
+      'DOProxy.batch: Returned array has invalid job at index 1. Only `DOProxy` methods supported.'
     );
   });*/
 });

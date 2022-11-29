@@ -1,21 +1,21 @@
 {
-  "name": "do-storage",
+  "name": "do-proxy",
   "version": "0.1.0",
   "type": "module",
-  "module": "./dist/do-storage.js",
-  "main": "./dist/do-storage.cjs",
-  "types": "./dist/do-storage.d.ts",
+  "module": "./dist/do-proxy.js",
+  "main": "./dist/do-proxy.cjs",
+  "types": "./dist/do-proxy.d.ts",
   "files": [
     "dist"
   ],
   "licence": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/osaton/do-storage"
+    "url": "https://github.com/osaton/do-proxy"
   },
   "tsup": {
     "entry": [
-      "src/do-storage.ts"
+      "src/do-proxy.ts"
     ],
     "splitting": false,
     "sourcemap": true,
@@ -45,7 +45,7 @@
     "@cloudflare/workers-types": "^4.20221111.1"
   },
   "scripts": {
-    "doc": "typedoc src/do-storage.ts",
+    "doc": "typedoc src/do-proxy.ts",
     "prepublish": "npm run test && npm run build",
     "preversion": "npm run test && npm run build",
     "start": "wrangler dev",

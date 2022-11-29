@@ -1,17 +1,17 @@
-# Durable Object Storage
+# Durable Object Proxy
 
 This library handles the `fetch` request building / routing for Cloudflare Durable Objects and gives easy access to Durable Object instance's state storage and class methods.
 
 Usage:
 
 ```ts
-import {DOStorage} from 'do-storage';
+import {DOProxy} from 'do-proxy';
 
 // Can be used as is for Durable Objects
-export { DOStorage as Counter1 };
+export { DOProxy as Counter1 };
 
 // Or you can extend it
-export class Counter2 extends DOstorage {
+export class Counter2 extends DOProxy {
   this.state: DurableObjectState;
   constructor(state: DurableObjectState) {
     super(state);
@@ -34,14 +34,14 @@ export interface Env {
 export default {
   async fetch(request: Request, env: Env) {
     const counter1 = Counter.from(env.COUNTER1).get('my-counter');
-    // You can only use storage methods if `DOStorage` class is used as-is
+    // You can only use storage methods if `DOProxy` class is used as-is
     const count1 = (await counter1.storage.get('counter')) || 0;
     count1++;
     await counter1.storage.put('counter', count1);
 
 
     const counter = Counter2.from<Counter>(env.COUNTER2).get('my-counter');
-    // By extending `DOStorage` you can also proxy calls to class methods
+    // By extending `DOProxy` you can also proxy calls to class methods
     const count2 = await counter.class.increment();
 
     return Response.json({
@@ -54,9 +54,9 @@ export default {
 
 ## Accessing `storage` methods
 
-`DOStorage` can be used as Durable Object class as is. It gives you access to Durable Object instance's Transactional storage API methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
+`DOProxy` can be used as Durable Object class as is. It gives you access to Durable Object instance's Transactional storage API methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
 
-Simple example where `DOStorage` is used as `Counter` class for Durable Object `COUNTER`:
+Simple example where `DOProxy` is used as `Counter` class for Durable Object `COUNTER`:
 
 ```ts
 const account = Account.from(env.ACCOUNT).get('my-account');
@@ -71,12 +71,12 @@ const [,,list] = await account.batch(() => [
 ]);
 ```
 
-This is okay for testing and for objects that don't get lot of traffic, but remember that each storage method call initiates new fetch request to the DO instance, except for `batch` commands which are done with one fetch. If you want to minimize requests you might want to extend `DOStorage` class and create methods that do the more complex stuff.
+This is okay for testing and for objects that don't get lot of traffic, but remember that each storage method call initiates new fetch request to the DO instance, except for `batch` commands which are done with one fetch. If you want to minimize requests you might want to extend `DOProxy` class and create methods that do the more complex stuff.
 
-Class methods can be accessed from `DOStorageProxy`'s `class` property:
+Class methods can be accessed from `DOProxyInstance`'s `class` property:
 
 ```ts
-class Account extends DOStorage {
+class Account extends DOProxy {
   this.state: DurableObjectState;
   constructor(state:DurableObjectState) {
     super(state);
@@ -112,7 +112,7 @@ await todos.batch(() => [
 
 ## Batch
 
-If you need to invoke Durable Object instance's multiple times, `DOStorageProxy` has a `batch` method which allows you to run multiple method calls inside one fetch request.
+If you need to invoke Durable Object instance's multiple times, `DOProxyInstance` has a `batch` method which allows you to run multiple method calls inside one fetch request.
 
 Method calls passed to `batch` will be run in sequence.
 
@@ -127,17 +127,17 @@ const res = await counter.batch(() => [
 ]); // => [1, 2, null, 1]
 ```
 
-## `static DOStorage.from(DO:DurableObjectNamespace):DOStorageNamespace`
+## `static DOProxy.from(DO:DurableObjectNamespace):DOProxyNamespace`
 
-Takes `DurableObjectNamespace` as argument and returns `DOStorageNamespace`.
+Takes `DurableObjectNamespace` as argument and returns `DOProxyNamespace`.
 
-## `DOStorageNamespace`
+## `DOProxyNamespace`
 
 methods:
 
-`get(name:string): DOStorageProxy`: Get by name.
-`getById(id:DurableObjectId)`: Get by `DurableObjectId`
-`getByString(id: string)`: Get by stringified `DurableObjectId`
+`get(name:string): DOProxyInstance`: Get by name.
+`getById(id:DurableObjectId): DOProxyInstance`: Get by `DurableObjectId`
+`getByString(id: string): DOProxyInstance`: Get by stringified `DurableObjectId`
 
 ## Limitations
 

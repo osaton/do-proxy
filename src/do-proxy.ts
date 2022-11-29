@@ -1,5 +1,5 @@
 import { DurableObjectGetAlarmOptions, DurableObjectPutOptions } from '@cloudflare/workers-types';
-const MODULE_NAME = 'do-storage';
+const MODULE_NAME = 'do-proxy';
 const storageMethods = [
   'delete',
   'deleteAlarm',
@@ -24,10 +24,10 @@ interface FetchResponse {
   data: any;
 }
 
-export interface DOStorageNamespace<T> {
-  get: (name: string) => DOStorageProxy<T>;
-  getById: (id: DurableObjectId) => DOStorageProxy<T>;
-  getByString: (id: string) => DOStorageProxy<T>;
+export interface DOProxyNamespace<T> {
+  get: (name: string) => DOProxyInstance<T>;
+  getById: (id: DurableObjectId) => DOProxyInstance<T>;
+  getByString: (id: string) => DOProxyInstance<T>;
 }
 
 export interface Storage {
@@ -69,7 +69,7 @@ async function doFetch(
 ): Promise<unknown> {
   const res = (await stub
     .fetch(
-      new Request('https://do-storage/', {
+      new Request('https://do-proxy/', {
         method: 'POST',
         body: JSON.stringify(config),
       })
@@ -122,14 +122,14 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
 
             if (!Array.isArray(configs)) {
               throw Error(
-                `\`batch\` callback should return array of \`DOStorage\` operations, got: ${typeof configs}`
+                `\`batch\` callback should return array of \`DOProxyInstance\` operations, got: ${typeof configs}`
               );
             }
 
             configs.forEach((cfg, index) => {
               if (!cfg?.type) {
                 throw Error(
-                  `DOStorageProxy.batch: Returned array has invalid job at index ${index}. Only \`DOStorageProxy\` methods supported.`
+                  `DOStorageProxy.batch: Returned array has invalid job at index ${index}. Only \`DOProxyInstance\` methods supported.`
                 );
               }
             });
@@ -173,16 +173,16 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
         return true;
       },
     }
-  ) as unknown as DOStorageProxy<T>;
+  ) as unknown as DOProxyInstance<T>;
 }
 
-export interface DOStorageProxy<T> {
+export interface DOProxyInstance<T> {
   storage: Storage;
   batch: (callback: () => unknown[]) => Promise<unknown[]>;
   class: T;
 }
 
-export class DOStorage {
+export class DOProxy {
   #state: DurableObjectState;
 
   constructor(state: DurableObjectState) {
@@ -247,7 +247,7 @@ export class DOStorage {
     );
   }
 
-  static from<T extends DOStorage>(binding: DurableObjectNamespace): DOStorageNamespace<T> {
+  static from<T extends DOProxy>(binding: DurableObjectNamespace): DOProxyNamespace<T> {
     const classInstance = new this({} as DurableObjectState) as any;
     return {
       get(name: string) {

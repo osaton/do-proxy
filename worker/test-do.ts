@@ -1,7 +1,7 @@
-import { DOStorage } from '../src/do-storage';
+import { DOProxy } from '../src/do-proxy';
 import { Env } from './index';
 
-export class TestDO extends DOStorage {
+export class TestDO extends DOProxy {
   env: Env;
   testProp: string = 'yes';
   state: DurableObjectState;
