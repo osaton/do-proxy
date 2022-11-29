@@ -8,6 +8,10 @@ This library handles the `fetch` request building / routing for [Cloudflare Dura
 npm install do-proxy --save-dev
 ```
 
+## Demo
+
+Try it out at [Stackblitz](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/basic?file=index.ts&terminal='start-stackblitz').
+
 ## Usage
 
 You can use `DOProxy` as is. This enables you use [`storage`](#storage-methods) methods.
