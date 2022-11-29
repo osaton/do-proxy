@@ -78,6 +78,21 @@ describe('DOProxy', () => {
     expect(res).toEqual([null, map]);
   });
 
+  it('Should not run the class constructor when initializing `DOProxyNamespace`', async () => {
+    class Test extends DOProxy {
+      state: DurableObjectState;
+      constructor(state: DurableObjectState, env: any) {
+        super(state);
+        // Should never run
+        throw Error('no problem for `DOProxyNamespace` initialization');
+      }
+    }
+
+    expect(() => {
+      const instance = Test.from<Test>(TEST_DO).get('test');
+    }).not.toThrow();
+  });
+
   /*
   it('Should throw if returned callback array contains invalid data', async () => {
     const storage = DOProxy.from(TEST_DO);

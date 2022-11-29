@@ -3,7 +3,6 @@ import { Env } from './index';
 
 export class TestDO extends DOProxy {
   env: Env;
-  testProp: string = 'yes';
   state: DurableObjectState;
   constructor(state: DurableObjectState, env: Env) {
     super(state);

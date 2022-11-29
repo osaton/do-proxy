@@ -98,7 +98,7 @@ async function resolveConfigs(configs: any[]) {
   return resolved;
 }
 
-function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig = false) {
+function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
   let proxyMode = 'execute';
 
   function getProxyStorage() {
@@ -152,8 +152,7 @@ function getProxy<T>(stub: DurableObjectStub, classInstance: any, returnConfig =
             {},
             {
               get: (target, prop) => {
-                const type = typeof classInstance[prop];
-                if (type === 'function') {
+                if (methods.has(prop as string)) {
                   return async function (...args: any[]) {
                     const config = getRequestConfig('function', prop, args);
                     if (proxyMode === 'batch') {
@@ -192,7 +191,7 @@ export interface DOProxyInstance<T> {
 export class DOProxy {
   #state: DurableObjectState;
 
-  constructor(state: DurableObjectState) {
+  constructor(state: DurableObjectState, env?: any) {
     this.#state = state;
   }
 
@@ -255,20 +254,36 @@ export class DOProxy {
   }
 
   static from<T extends DOProxy>(binding: DurableObjectNamespace): DOProxyNamespace<T> {
-    const classInstance = new this({} as DurableObjectState) as any;
+    const methods = getClassMethods(this.prototype);
     return {
       get(name: string) {
         const stub = binding.get(binding.idFromName(name));
-        return getProxy<T>(stub, classInstance);
+        return getProxy<T>(stub, methods);
       },
       getById(id: DurableObjectId) {
         const stub = binding.get(id);
-        return getProxy<T>(stub, classInstance);
+        return getProxy<T>(stub, methods);
       },
       getByString(id: string) {
         const stub = binding.get(binding.idFromString(id));
-        return getProxy<T>(stub, classInstance);
+        return getProxy<T>(stub, methods);
       },
     };
   }
+}
+
+function getClassMethods(proto: DOProxy) {
+  const exclude = ['constructor', 'fetch'];
+
+  const methods: Set<string> = new Set();
+  let o = proto;
+  while (o !== null) {
+    for (let name of Object.getOwnPropertyNames(o)) {
+      if (!exclude.includes(name) && typeof (proto as any)[name] === 'function') {
+        methods.add(name);
+      }
+    }
+    o = Object.getPrototypeOf(o);
+  }
+  return methods;
 }
