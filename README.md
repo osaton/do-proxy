@@ -14,7 +14,7 @@ Try it out at [Stackblitz](https://stackblitz.com/fork/github/osaton/do-proxy/tr
 
 ## Usage
 
-You can use `DOProxy` as is. This enables you use [`storage`](#storage-methods) methods.
+You can use `DOProxy` as is for Durable Object bindings. This enables you use [`storage`](#storage-methods) methods.
 
 Here we expect you to have DO class `Todo` bound to `TODO` inside `wrangler.toml`:
 
