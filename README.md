@@ -118,3 +118,9 @@ methods:
 ## Limitations
 
 Remember that we are still doing fetch requests even if it is done in the background, so everything sent to `class` and `storage` methods must be JSON serializable.
+
+## Other libraries
+
+Not the Durable Object proxy you were looking for?
+
+- [`do-proxy`](https://github.com/fisherdarling/do-proxy) for Rust by [@fisherdarling](https://www.github.com/fisherdarling)
