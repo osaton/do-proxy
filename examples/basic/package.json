@@ -2,12 +2,13 @@
   "name": "do-proxy-basic-example",
   "version": "0.0.0",
   "scripts": {
-    "dev": "WRANGLER_SEND_METRICS=false wrangler dev --local",
-    "start-stackblitz": "WRANGLER_SEND_METRICS=false wrangler dev --local"
+    "dev": "BROWSER=yeees WRANGLER_SEND_METRICS=false wrangler dev --local --port 6283",
+    "start-stackblitz": "WRANGLER_SEND_METRICS=false wrangler dev --local --port 6283",
+    "wrangler": "wrangler"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1",
     "do-proxy": "^0.2.2",
-    "wrangler": "^2.4.4"
+    "wrangler": "^2.5.0"
   }
 }
