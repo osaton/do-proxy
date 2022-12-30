@@ -1,5 +1,12 @@
 {
   "name": "do-proxy",
+  "description": "Simple interface for accessing Cloudflare Durable Objects' storage and class methods",
+  "keywords": [
+    "durable objects",
+    "do",
+    "cloudflare",
+    "workers"
+  ],
   "version": "1.0.1",
   "type": "module",
   "module": "./dist/do-proxy.js",
