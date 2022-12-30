@@ -1,6 +1,8 @@
 # Durable Object Proxy
 
-This library handles the `fetch` request building / routing for [Cloudflare Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects/) and gives easy access to Durable Object instance's state storage and class methods.
+> Simple interface for accessing [Cloudflare Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects/)' storage and class methods.
+
+This library handles request building, fetching and responding behind the scenes via lightweight proxy object which provides interface for accessing DO instance's storage and class methods.
 
 ## Install
 
@@ -12,9 +14,42 @@ npm install do-proxy --save-dev
 
 Try it out at [Stackblitz](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/basic?file=index.ts&terminal='start-stackblitz').
 
+## Usage briefly
+
+Make your Durable Object class methods accessible by extending the `DOProxy`.
+
+```ts
+import { DOProxy } from 'do-proxy';
+class MyDOClass extends DOProxy {
+  // Arguments & return values have to be JSON serialiazable
+  myClassMethod(param: string) {
+    // Do what ever you would do inside DO
+  }
+}
+```
+
+Inside your Worker's `fetch` method:
+
+```ts
+// TypeScript users: Pass your class as type to `from` method to get proper types for `class` methods
+const myDoBinding = DOProxy.from<MyDOClass>(env.MY_DO_BINDING);
+const myDo = myDoBinding.get('my-do');
+
+// You can access instance's storage methods
+const res1 = await myDO.storage.get('my-store');
+// You can also access your class's methods.
+const res2 = await myDO.class.myClassMethod('foo');
+
+// Or handle both with a single fetch behind the scenes using `batch` method
+const [res3, res4] = await myDO.batch(() => [
+  myDO.storage.get('my-store'),
+  myDO.class.myClassMethod('foo'),
+]);
+```
+
 ## Usage
 
-You can use `DOProxy` as is for Durable Object bindings. This enables you use [`storage`](#storage-methods) methods.
+You can use `DOProxy` as is for Durable Object bindings. This enables you to use [`storage`](#storage-methods) methods.
 
 Here we expect you to have DO class `Todo` bound to `TODO` inside `wrangler.toml`:
 
