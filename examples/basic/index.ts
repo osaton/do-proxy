@@ -1,3 +1,4 @@
+import { DurableObjectState } from '@cloudflare/workers-types';
 import { DOProxy } from 'do-proxy';
 export { Todo };
 
@@ -23,7 +24,7 @@ class Todo extends DOProxy {
     return this.state.storage.get(`todo:${id}`);
   }
 
-  alarm() {
+  private alarm() {
     console.log('Remember your todos!');
     this.state.storage.put('last-scheduled-alarm', Date.now());
   }
