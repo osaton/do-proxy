@@ -51,6 +51,18 @@ export interface Storage {
   sync: () => Promise<void>;
 }
 
+type PromisifyFunction<TFunc extends (...args: any) => any> = ReturnType<TFunc> extends Promise<any>
+  ? TFunc
+  : (...args: Parameters<TFunc>) => Promise<ReturnType<TFunc>>;
+
+type GetClassMethods<T> = {
+  // Only methods can be proxied
+  [K in keyof T as T[K] extends Function ? K : never]: T[K] extends (...args: any) => any
+    ? // If the class method is not marked as async, we need to wrap return type with `Promise` as the proxied methods are all async
+      PromisifyFunction<T[K]>
+    : never;
+};
+
 function getRequestConfig(type: RequestConfigType, prop: PropertyKey, args: any[]): RequestConfig {
   return {
     type,
@@ -185,7 +197,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
 export interface DOProxyInstance<T> {
   storage: Storage;
   batch: (callback: () => unknown[]) => Promise<unknown[]>;
-  class: T;
+  class: GetClassMethods<T>;
 }
 
 export class DOProxy {
