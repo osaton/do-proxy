@@ -18,6 +18,16 @@ describe('DOProxy types', () => {
       test.class.setStorage('foo', 'bar', 'baz'),
     ]);
 
+    // Batch return types
+    const [bool, arr, asString] = await test.batch(() => [
+      test.storage.delete('test'),
+      test.class.funcWithoutAsync(),
+      test.storage.get('test') as Promise<string | null>,
+    ]);
+    bool.valueOf();
+    arr[0].charAt(0);
+    asString?.charAt(0);
+
     // Should promisify methods that aren't marked as such
     test.class.funcWithoutAsync().then((res) => {
       res[0];

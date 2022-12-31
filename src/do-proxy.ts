@@ -51,6 +51,12 @@ export interface Storage {
   sync: () => Promise<void>;
 }
 
+type UnwrapPromises<Promises> = Promises extends [Promise<infer Value>, ...infer Rest]
+  ? [Value, ...UnwrapPromises<Rest>]
+  : [];
+
+type BatchResponse<T> = UnwrapPromises<T>;
+
 type PromisifyFunction<TFunc extends (...args: any) => any> = ReturnType<TFunc> extends Promise<any>
   ? TFunc
   : (...args: Parameters<TFunc>) => Promise<ReturnType<TFunc>>;
@@ -196,7 +202,9 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
 
 export interface DOProxyInstance<T> {
   storage: Storage;
-  batch: (callback: () => unknown[]) => Promise<unknown[]>;
+  batch: <T extends [Promise<unknown>, ...Promise<unknown>[]]>(
+    callback: () => T
+  ) => BatchResponse<T>;
   class: GetClassMethods<T>;
 }
 
