@@ -1,4 +1,3 @@
-import { DurableObjectGetAlarmOptions, DurableObjectPutOptions } from '@cloudflare/workers-types';
 const MODULE_NAME = 'do-proxy';
 const storageMethods = [
   'delete',
@@ -24,10 +23,49 @@ interface FetchResponse {
   data: any;
 }
 
+declare abstract class DurableObjectNamespaceProxy<T extends ConstructorType>
+  implements Omit<DurableObjectNamespace, 'get'>
+{
+  newUniqueId(options?: DurableObjectNamespaceNewUniqueIdOptions | undefined): DurableObjectId;
+  idFromName(name: string): DurableObjectId;
+  idFromString(id: string): DurableObjectId;
+  get(id: DurableObjectId): DurableObjectStubProxy<InstanceType<T>>;
+}
+
+interface DurableObjectProxy<T> {
+  /**
+   * Stub's id
+   */
+  //id: DurableObjectId;
+  /**
+   * The actual stub in case you need direct access to it
+   */
+  //stub: DurableObjectStub;
+  /**
+   * Transactional storage API
+   *
+   * [See documentation](https://developers.cloudflare.com/workers/runtime-apis/durable-objects/#transactional-storage-api)
+   */
+  storage: Storage;
+  /**
+   * Run multiple commands inside DO instance with one fetch command
+   */
+  batch: <T extends [Promise<unknown>, ...Promise<unknown>[]]>(
+    callback: () => T
+  ) => BatchResponse<T>;
+}
+
+export interface DurableObjectStubProxy<T> extends DurableObjectProxy<T> {
+  /**
+   * Access class methods
+   */
+  class: GetClassMethods<T>;
+}
+
 export interface DOProxyNamespace<T> {
-  get: (name: string) => DOProxyInstance<T>;
-  getById: (id: DurableObjectId) => DOProxyInstance<T>;
-  getByString: (id: string) => DOProxyInstance<T>;
+  get: (name: string) => DurableObjectStubProxy<T>;
+  getById: (id: DurableObjectId) => DurableObjectStubProxy<T>;
+  getByString: (id: string) => DurableObjectStubProxy<T>;
 }
 
 export interface Storage {
@@ -56,6 +94,8 @@ type UnwrapPromises<Promises> = Promises extends [Promise<infer Value>, ...infer
   : [];
 
 type BatchResponse<T> = UnwrapPromises<T>;
+
+type ConstructorType = abstract new (...args: any) => any;
 
 type PromisifyFunction<TFunc extends (...args: any) => any> = ReturnType<TFunc> extends Promise<any>
   ? TFunc
@@ -139,7 +179,6 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
     {},
     {
       get: (target, prop) => {
-        // Handle class methods
         if (prop === 'batch') {
           return async function (jobs: () => any[]) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
@@ -188,24 +227,13 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
         if (prop === 'storage') {
           return storage;
         }
-
-        return (target as any)[prop];
       },
       set(target, prop, value) {
-        console.dir({ set: [prop, value] });
         (target as any)[prop] = value;
         return true;
       },
     }
-  ) as unknown as DOProxyInstance<T>;
-}
-
-export interface DOProxyInstance<T> {
-  storage: Storage;
-  batch: <T extends [Promise<unknown>, ...Promise<unknown>[]]>(
-    callback: () => T
-  ) => BatchResponse<T>;
-  class: GetClassMethods<T>;
+  ) as unknown as DurableObjectStubProxy<T>;
 }
 
 export class DOProxy {
@@ -273,6 +301,42 @@ export class DOProxy {
     );
   }
 
+  /**
+   * Get wrapped `DurableObjectNamespace`
+   *
+   * Wraps proxy around DurableObjectNamespace
+   *
+   * @param binding DurableObjectNamespace you want to proxy
+   * @returns
+   */
+  static wrap<T extends ConstructorType>(
+    this: T,
+    binding: DurableObjectNamespace
+  ): DurableObjectNamespaceProxy<T> {
+    const methods = getClassMethods(this.prototype);
+
+    return new Proxy(binding, {
+      get: (target, prop) => {
+        // We only intercept `get` method so we can return proxied stub
+        if (prop === 'get') {
+          return function (id: DurableObjectId) {
+            const stub = binding.get(id);
+            return getProxy<InstanceType<T>>(stub, methods);
+          };
+        }
+
+        // Handle DurableObjectNamespace's builtin properties / methods last, so that possible conflicting updates don't break existing implementations
+        if (prop in target) {
+          const value = (target as any)[prop];
+          return typeof value === 'function' ? value.bind(target) : value;
+        }
+      },
+    }) as unknown as DurableObjectNamespaceProxy<T>;
+  }
+
+  /**
+   * @deprecated Use `wrap` method instead which allows access to DurableObjectNamespace methods without type quirks
+   */
   static from<T extends DOProxy>(binding: DurableObjectNamespace): DOProxyNamespace<T> {
     const methods = getClassMethods(this.prototype);
     return {
