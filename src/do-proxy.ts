@@ -1,5 +1,5 @@
 const MODULE_NAME = 'do-proxy';
-const storageMethods = [
+const storageMethods: SupportedStorageMethods[] = [
   'delete',
   'deleteAlarm',
   'deleteAll',
@@ -10,6 +10,17 @@ const storageMethods = [
   'setAlarm',
   'sync',
 ];
+
+type SupportedStorageMethods =
+  | 'delete'
+  | 'deleteAlarm'
+  | 'deleteAll'
+  | 'get'
+  | 'getAlarm'
+  | 'list'
+  | 'put'
+  | 'setAlarm'
+  | 'sync';
 
 interface RequestConfig {
   type: RequestConfigType;
@@ -68,26 +79,7 @@ export interface DOProxyNamespace<T> {
   getByString: (id: string) => DurableObjectStubProxy<T>;
 }
 
-export interface Storage {
-  delete: (key: string, options?: DurableObjectPutOptions | undefined) => Promise<boolean>;
-  deleteAlarm: () => {};
-  deleteAll: (options?: DurableObjectPutOptions | undefined) => Promise<void>;
-  get: (key: string, options?: DurableObjectGetOptions | undefined) => Promise<unknown>;
-  getAlarm: (options?: DurableObjectGetAlarmOptions | undefined) => Promise<number | null>;
-  list: (
-    options?: globalThis.DurableObjectListOptions | undefined
-  ) => Promise<Map<string, unknown>>;
-  put: (
-    key: string,
-    value: unknown,
-    options?: DurableObjectPutOptions | undefined
-  ) => Promise<void>;
-  setAlarm: (
-    scheduledTime: number | Date,
-    options?: globalThis.DurableObjectSetAlarmOptions | undefined
-  ) => Promise<void>;
-  sync: () => Promise<void>;
-}
+export type Storage = Pick<DurableObjectStorage, SupportedStorageMethods>;
 
 type UnwrapPromises<Promises> = Promises extends [Promise<infer Value>, ...infer Rest]
   ? [Value, ...UnwrapPromises<Rest>]
