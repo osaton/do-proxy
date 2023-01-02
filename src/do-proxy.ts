@@ -34,14 +34,18 @@ interface FetchResponse {
   data: any;
 }
 
-declare abstract class DurableObjectNamespaceProxy<T extends ConstructorType>
+declare abstract class DurableObjectNamespaceProxyClass<T>
   implements Omit<DurableObjectNamespace, 'get'>
 {
   newUniqueId(options?: DurableObjectNamespaceNewUniqueIdOptions | undefined): DurableObjectId;
   idFromName(name: string): DurableObjectId;
   idFromString(id: string): DurableObjectId;
-  get(id: DurableObjectId): DurableObjectStubProxy<InstanceType<T>>;
+  get(id: DurableObjectId): DurableObjectStubProxy<T>;
 }
+
+export type DurableObjectNamespaceProxy<T> = T extends ConstructorType
+  ? DurableObjectNamespaceProxyClass<InstanceType<T>>
+  : DurableObjectNamespaceProxyClass<T>;
 
 type DurableObjectProxy<T> = {
   /**
@@ -74,7 +78,7 @@ export type DurableObjectStubProxy<T> = keyof GetClassMethods<T> extends never
   ? Omit<DurableObjectProxy<T>, 'class'>
   : DurableObjectProxy<T>;
 
-export interface DOProxyNamespace<T> {
+interface DOProxyNamespace<T> {
   get: (name: string) => DurableObjectStubProxy<T>;
   getById: (id: DurableObjectId) => DurableObjectStubProxy<T>;
   getByString: (id: string) => DurableObjectStubProxy<T>;
@@ -303,12 +307,8 @@ export class DOProxy {
   }
 
   /**
-   * Get wrapped `DurableObjectNamespace`
-   *
-   * Wraps proxy around DurableObjectNamespace
-   *
-   * @param binding DurableObjectNamespace you want to proxy
-   * @returns
+   * Get `DurableObjectNamespace` wrapped inside proxy
+
    */
   static wrap<T extends ConstructorType>(
     this: T,

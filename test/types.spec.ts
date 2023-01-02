@@ -1,8 +1,63 @@
 const { TEST_DO } = getMiniflareBindings();
-
 import { TestDO } from '../worker/test-do';
+import { DurableObjectStubProxy, DurableObjectNamespaceProxy, DOProxy } from '../src/do-proxy';
 
 describe('DOProxy types', () => {
+  describe('DurableObjectNamespaceProxy', () => {
+    it('should provide correct properties', () => {
+      // @todo better tests
+      type Test = DurableObjectNamespaceProxy<TestDO>;
+      type Do = DurableObjectNamespaceProxy<DOProxy>;
+
+      ['idFromName', 'get', 'idFromString', 'newUniqueId'] satisfies (keyof Test)[];
+
+      ['idFromName', 'get', 'idFromString', 'newUniqueId'] satisfies (keyof Do)[];
+    });
+  });
+
+  describe('DurableObjectStubProxy', () => {
+    it('should provide correct properties', () => {
+      // @todo better tests
+      type Test = DurableObjectStubProxy<TestDO>;
+      type Do = DurableObjectStubProxy<DOProxy>;
+
+      ['id', 'stub', 'storage', 'batch', 'class'] satisfies (keyof Test)[];
+
+      [
+        'id',
+        'stub',
+        'storage',
+        'batch',
+        // @ts-expect-error
+        'class',
+      ] satisfies (keyof Do)[];
+    });
+
+    it('should expose class methods for extended classes', () => {
+      // @todo better tests
+      type Test = DurableObjectStubProxy<TestDO>;
+
+      ['funcWithoutAsync', 'getStorage', 'setStorage'] satisfies (keyof Test['class'])[];
+    });
+  });
+
+  it('should provide correct properties', () => {
+    // @todo better tests
+    type Test = DurableObjectStubProxy<TestDO>;
+    type Do = DurableObjectStubProxy<DOProxy>;
+
+    ['id', 'stub', 'storage', 'batch', 'class'] satisfies (keyof Test)[];
+
+    [
+      'id',
+      'stub',
+      'storage',
+      'batch',
+      // @ts-expect-error
+      'class',
+    ] satisfies (keyof Do)[];
+  });
+
   it('should provide correct types', async () => {
     const test = TestDO.from<TestDO>(TEST_DO).get('test');
 
