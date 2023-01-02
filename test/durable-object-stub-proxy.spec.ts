@@ -12,6 +12,10 @@ describe('DurableObjectStubProxy', () => {
       stubDo = DO.get(DO.newUniqueId());
     });
 
+    it('should have `id` property', () => {
+      expect(stubDo.id).toHaveProperty('equals');
+    });
+
     it('should have access to storage methods', async () => {
       await stubDo.storage.put('test', 'value');
       const res = await stubDo.storage.get('test');
@@ -49,6 +53,10 @@ describe('DurableObjectStubProxy', () => {
     beforeEach(() => {
       const DO = TestDO.wrap(TEST_DO);
       stubTest = DO.get(DO.newUniqueId());
+    });
+
+    it('should have `id` property', () => {
+      expect(stubDo.id).toHaveProperty('equals');
     });
 
     it('should have access to storage methods', async () => {

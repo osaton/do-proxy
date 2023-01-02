@@ -47,7 +47,7 @@ type DurableObjectProxy<T> = {
   /**
    * Stub's id
    */
-  //id: DurableObjectId;
+  id: DurableObjectId;
   /**
    * The actual stub in case you need direct access to it
    */
@@ -186,7 +186,9 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
   const proxyClass = getProxyClass();
 
   return new Proxy(
-    {},
+    {
+      id: stub.id,
+    },
     {
       get: (target, prop) => {
         if (prop === 'batch') {
@@ -222,6 +224,9 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
         if (prop === 'storage') {
           return storage;
         }
+
+        const value = (target as any)[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
       },
       set(target, prop, value) {
         (target as any)[prop] = value;
