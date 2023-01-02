@@ -31,19 +31,20 @@ class MyDOClass extends DOProxy {
 Inside your Worker's `fetch` method:
 
 ```ts
-// TypeScript users: Pass your class as type to `from` method to get proper types for `class` methods
-const myDoBinding = DOProxy.from<MyDOClass>(env.MY_DO_BINDING);
-const myDo = myDoBinding.get('my-do');
+// Get `DurableObjectNamespace` wrapped inside our proxy
+const MY_DO_BINDING = MyDOClass.wrap(env.MY_DO_BINDING);
+// You can use the default namespace methods.
+const stub = MY_DO_BINDING.get(MY_DO_BINDING.idFromName('my-name'));
 
 // You can access instance's storage methods
-const res1 = await myDO.storage.get('my-store');
+const res1 = await stub.storage.get('my-store');
 // You can also access your class's methods.
-const res2 = await myDO.class.myClassMethod('foo');
+const res2 = await stub.class.myClassMethod('foo');
 
 // Or handle both with a single fetch behind the scenes using `batch` method
-const [res3, res4] = await myDO.batch(() => [
-  myDO.storage.get('my-store'),
-  myDO.class.myClassMethod('foo'),
+const [res3, res4] = await stub.batch(() => [
+  stub.storage.get('my-store'),
+  stub.class.myClassMethod('foo'),
 ]);
 ```
 
@@ -58,7 +59,8 @@ import { DOProxy } from 'do-proxy';
 export { DOProxy as Todo };
 export default {
   async fetch(req: Request, env: any) {
-    const todo = DOProxy.from(env.TODO).get('my-todo');
+    const TODO = DOProxy.wrap(env.TODO);
+    const stub = TODO.get(TODO.idFromName('my-todos'));
     await todo.storage.put('todo:1', 'has to be done');
     const list = Object.fromEntries(await todo.storage.list());
     return Response.json(list);
@@ -89,10 +91,10 @@ class Todo extends DOProxy {
 }
 export default {
   async fetch(req: Request, env: any) {
-    // Remember to add the `<YourClass>` part so you get types for `class` methods
-    const todos = Todo.from<Todo>(env.TODO).get('my-todos');
-    const id = await todos.class.add('has to be done');
-    const todo = await todos.class.get(id);
+    const TODO = Todo.wrap(env.TODO);
+    const stub = TODO.get(TODO.idFromName('my-todos'));
+    const id = await stub.class.add('has to be done');
+    const todo = await stub.class.get(id);
     return Response.json({
       id,
       todo,
@@ -106,10 +108,10 @@ You can also utilize the [`batch`](#batch) method which allows you to run multip
 
 ```ts
 // See previous example for `Todo` details
-const [, , list] = await todos.batch(() => [
-  todos.class.add('my todo'),
-  todos.class.add('my other todo'),
-  todos.storage.list(),
+const [, , list] = await stub.batch(() => [
+  stub.class.add('my todo'),
+  stub.class.add('my other todo'),
+  stub.storage.list(),
 ]);
 
 return Response.json(Object.fromEntries(list as Map<string, string>));
@@ -119,36 +121,45 @@ return Response.json(Object.fromEntries(list as Map<string, string>));
 
 `DOProxy` can be used as Durable Object class as is. It gives you access to Durable Object instance's [Transactional storage API](https://developers.cloudflare.com/workers/runtime-apis/durable-objects/#transactional-storage-api) methods (excluding `transaction` which can't be proxied because of JSON serialization. See [batch method](#batch)).
 
-Available methods: `DOProxyInstance.storage.get|put|delete|deleteAll|list|getAlarm|setAlarm|deleteAlarm|sync`
+Available methods: `DurableObjectStubProxy.storage.get|put|delete|deleteAll|list|getAlarm|setAlarm|deleteAlarm|sync`
 
 ## Batch
 
-If you need to invoke Durable Object instance's multiple times, `DOProxyInstance` has a `batch` method which allows you to run multiple method calls inside one fetch request.
+If you need to invoke Durable Object instance's multiple times, `DurableObjectStubProxy` has a `batch` method which allows you to run multiple method calls inside one fetch request.
 
 Method calls passed to `batch` will be run in sequence.
 
 ```ts
-const counter = Counter.from<Counter>(env.Counter).get('counter1');
+const COUNTER = Counter.wrap(env.Counter);
+const stub = COUNTER.get(COUNTER.newUniqueId());
 
-await counter.batch(() => [
-  counter.class.increment(),
-  counter.class.increment(),
-  counter.storage.deleteAll(),
-  counter.class.increment(),
+await stub.batch(() => [
+  stub.class.increment(),
+  stub.class.increment(),
+  stub.storage.deleteAll(),
+  stub.class.increment(),
 ]); // => [1, 2, null, 1]
 ```
 
-## DOProxy.from
+## static `wrap(binding: DurableObjectNamespace): DurableObjectNamespaceProxy`
 
-Takes `DurableObjectNamespace` as argument and returns `DOProxyNamespace`.
+This method return `DurableObjectNamespace` wrapped inside proxy.
+It has all the same methods that `DurableObjectNamespace`:
 
-## `DOProxyNamespace`
+- `newUniqueId(options?: DurableObjectNamespaceNewUniqueIdOptions | undefined): DurableObjectId`;
+- `idFromName(name: string): DurableObjectId`
+- `idFromString(id: string): DurableObjectId`
+- `get(id: DurableObjectId): DurableObjectStubProxy`
 
-methods:
+`get` Method returns `DurableObjectStubProxy` instead of `DurableObjectStub`.
 
-- `get(name:string): DOProxyInstance`: Get by name.
-- `getById(id:DurableObjectId): DOProxyInstance`: Get by `DurableObjectId`
-- `getByString(id: string): DOProxyInstance`: Get by stringified `DurableObjectId`
+## `DurableObjectStubProxy` properties
+
+- `id: DurableObjectId`
+- `stub: DurableObjectStub`: The actual stub if you need access to it
+- `storage: Object`: Storage methods
+- `batch: (callback: () => Promise<unknown>[]) => unknown[]`
+- `class: Object|undefined`: All the class methods if `wrap` was called on an extended class
 
 ## Limitations
 
