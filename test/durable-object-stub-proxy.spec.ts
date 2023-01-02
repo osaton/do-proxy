@@ -16,6 +16,11 @@ describe('DurableObjectStubProxy', () => {
       expect(stubDo.id).toHaveProperty('equals');
     });
 
+    it('should have `stub` property', () => {
+      expect(stubDo.stub).toHaveProperty('fetch');
+      expect(stubDo.stub).toHaveProperty('id');
+    });
+
     it('should have access to storage methods', async () => {
       await stubDo.storage.put('test', 'value');
       const res = await stubDo.storage.get('test');
@@ -56,7 +61,12 @@ describe('DurableObjectStubProxy', () => {
     });
 
     it('should have `id` property', () => {
-      expect(stubDo.id).toHaveProperty('equals');
+      expect(stubTest.id).toHaveProperty('equals');
+    });
+
+    it('should have `stub` property', () => {
+      expect(stubTest.stub).toHaveProperty('fetch');
+      expect(stubTest.stub).toHaveProperty('id');
     });
 
     it('should have access to storage methods', async () => {

@@ -49,9 +49,9 @@ type DurableObjectProxy<T> = {
    */
   id: DurableObjectId;
   /**
-   * The actual stub in case you need direct access to it
+   * The actual stub returned by `DurableObjectNamespace.get`
    */
-  //stub: DurableObjectStub;
+  stub: DurableObjectStub;
   /**
    * Transactional storage API
    *
@@ -65,7 +65,7 @@ type DurableObjectProxy<T> = {
     callback: () => T
   ) => BatchResponse<T>;
   /**
-   * Access class methods
+   * Methods from the extended class
    */
   class: GetClassMethods<T>;
 };
@@ -188,6 +188,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
   return new Proxy(
     {
       id: stub.id,
+      stub: stub,
     },
     {
       get: (target, prop) => {
