@@ -7,7 +7,7 @@
     "cloudflare",
     "workers"
   ],
-  "version": "1.0.2",
+  "version": "1.1.0",
   "type": "module",
   "module": "./dist/do-proxy.js",
   "main": "./dist/do-proxy.cjs",
