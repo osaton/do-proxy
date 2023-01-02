@@ -1,7 +1,7 @@
 const { TEST_DO } = getMiniflareBindings();
 
 import { DOProxy } from '../src/do-proxy';
-// Use beforeAll & beforeEach inside describe blocks to set up particular DB states for a set of tests
+
 describe('Storage', () => {
   it('should handle map conversion for `storage.list` method', async () => {
     const ns = DOProxy.from(TEST_DO);

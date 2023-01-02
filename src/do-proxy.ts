@@ -43,7 +43,7 @@ declare abstract class DurableObjectNamespaceProxy<T extends ConstructorType>
   get(id: DurableObjectId): DurableObjectStubProxy<InstanceType<T>>;
 }
 
-interface DurableObjectProxy<T> {
+type DurableObjectProxy<T> = {
   /**
    * Stub's id
    */
@@ -64,14 +64,15 @@ interface DurableObjectProxy<T> {
   batch: <T extends [Promise<unknown>, ...Promise<unknown>[]]>(
     callback: () => T
   ) => BatchResponse<T>;
-}
-
-export interface DurableObjectStubProxy<T> extends DurableObjectProxy<T> {
   /**
    * Access class methods
    */
   class: GetClassMethods<T>;
-}
+};
+
+export type DurableObjectStubProxy<T> = keyof GetClassMethods<T> extends never
+  ? Omit<DurableObjectProxy<T>, 'class'>
+  : DurableObjectProxy<T>;
 
 export interface DOProxyNamespace<T> {
   get: (name: string) => DurableObjectStubProxy<T>;
@@ -154,7 +155,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
   function getProxyStorage() {
     const obj: Record<string, () => {}> = {};
     storageMethods.forEach((methodName) => {
-      obj[methodName] = function (...args) {
+      obj[methodName] = async function (...args) {
         const config = getRequestConfig('storage', methodName, args);
         if (proxyMode === 'batch') {
           return config;
@@ -166,7 +167,24 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
     return obj as unknown as Storage;
   }
 
+  function getProxyClass() {
+    const obj: Record<string, () => {}> = {};
+    for (const prop of methods) {
+      obj[prop] = async function (...args: any[]) {
+        const config = getRequestConfig('function', prop, args);
+        if (proxyMode === 'batch') {
+          return config;
+        }
+        return doFetch(stub, config);
+      };
+    }
+
+    return obj;
+  }
+
   const storage = getProxyStorage();
+  const proxyClass = getProxyClass();
+
   return new Proxy(
     {},
     {
@@ -196,23 +214,8 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
             return doFetch(stub, configs);
           };
         }
-        if (prop === 'class') {
-          return new Proxy(
-            {},
-            {
-              get: (target, prop) => {
-                if (methods.has(prop as string)) {
-                  return async function (...args: any[]) {
-                    const config = getRequestConfig('function', prop, args);
-                    if (proxyMode === 'batch') {
-                      return config;
-                    }
-                    return doFetch(stub, config);
-                  };
-                }
-              },
-            }
-          );
+        if (prop === 'class' && methods.size > 0) {
+          return proxyClass;
         }
 
         // Handle storage methods
@@ -355,7 +358,11 @@ function getClassMethods(proto: DOProxy) {
   let o = proto;
   while (o !== null) {
     for (let name of Object.getOwnPropertyNames(o)) {
-      if (!exclude.includes(name) && typeof (proto as any)[name] === 'function') {
+      if (
+        !exclude.includes(name) &&
+        typeof (proto as any)[name] === 'function' &&
+        proto.hasOwnProperty(name)
+      ) {
         methods.add(name);
       }
     }

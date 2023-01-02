@@ -10,8 +10,6 @@ describe('DOProxy', () => {
       const id = DO.idFromName('test');
       const id2 = DO.newUniqueId();
       const fromString = DO.idFromString(id.toString());
-      const stub1 = DO.get(id);
-      const stub2 = DO.get(fromString);
 
       expect(id).toEqual(TEST_DO.idFromName('test'));
       expect(typeof id2.equals).toEqual('function');
