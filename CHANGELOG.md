@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/osaton/do-proxy/compare/v1.2.1...v1.2.2) (2023-01-03)
+
+
+### Bug Fixes
+
+* **docs:** change install command ([28f6d4c](https://github.com/osaton/do-proxy/commit/28f6d4ca2d32a8025d5c47d2de5286a0a9b19bc4))
+
 ## [1.2.1](https://github.com/osaton/do-proxy/compare/v1.2.0...v1.2.1) (2023-01-03)
 
 
