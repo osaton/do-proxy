@@ -7,7 +7,7 @@ This library handles request building, fetching and responding behind the scenes
 ## Install
 
 ```text
-npm install do-proxy --save-dev
+npm install do-proxy
 ```
 
 ## Demo
