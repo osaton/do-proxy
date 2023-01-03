@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<!--
+  This file just contains the client scripts to make the demo easier to test, nothing `DOProxy` related here
+-->
+<html>
+  <head>
+    <style>
+      body {
+        font-family: 'Arial';
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        padding-left: 0.5em;
+      }
+
+      li {
+        padding: 0;
+        position: relative;
+        display: block;
+        max-width: 400px;
+        font-family: 'Courier New';
+        padding: 2px;
+        border: 1px solid #ccc;
+      }
+      li * {
+        vertical-align: middle;
+      }
+
+      li input {
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Todos</h1>
+    <h3>Add Todo</h3>
+    <input type="text" id="todo-input" />
+    <button id="add-btn">Add todo</button>
+    <ul id="todos"></ul>
+    <div id="completed-container">
+      <h3>Completed Todos</h3>
+      <ul id="completed-todos"></ul>
+    </div>
+
+    <button id="delete-all-btn">Delete all storage items</button>
+    <script type="module">
+      async function fetcher(url, options) {
+        const settings = {
+          headers: {
+            'content-type': 'application/json',
+          },
+          ...options,
+        };
+        return fetch(url, settings).then((res) => res.json());
+      }
+
+      const todos = document.getElementById('todos');
+      const completedTodos = document.getElementById('completed-todos');
+      const addButton = document.getElementById('add-btn');
+      const deleteAllButton = document.getElementById('delete-all-btn');
+      const input = document.getElementById('todo-input');
+
+      function addToList(todo, position = 'append') {
+        const li = document.createElement('li');
+        li.setAttribute('data-id', todo.id);
+        const checkbox = document.createElement('input');
+        checkbox.setAttribute('type', 'checkbox');
+        checkbox.checked = todo.completed;
+
+        // Completed toggle
+        checkbox.addEventListener('change', async () => {
+          const id = li.getAttribute('data-id');
+          await fetcher(`/todos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              completed: checkbox.checked,
+            }),
+          });
+          checkbox.checked ? completedTodos.prepend(li) : todos.prepend(li);
+        });
+        li.appendChild(checkbox);
+        const span = document.createElement('span');
+        span.contentEditable = true;
+
+        // Stop editing todo's title
+        span.addEventListener('blur', async (e) => {
+          if (span.textContent !== todo.title) {
+            const updatedTodo = await fetcher(`/todos/${todo.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                title: span.textContent,
+              }),
+            });
+            todo.title = updatedTodo.title;
+          }
+        });
+        span.textContent = todo.title;
+        li.appendChild(span);
+        if (position === 'append') {
+          todo.completed ? completedTodos.appendChild(li) : todos.appendChild(li);
+        } else {
+          todo.completed ? completedTodos.prepend(li) : todos.prepend(li);
+        }
+      }
+
+      addButton.addEventListener('click', async () => {
+        const todo = await fetcher('/todos', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: input.value,
+          }),
+        });
+
+        addToList(todo, 'prepend');
+      });
+
+      deleteAllButton.addEventListener('click', async () => {
+        const res = await fetcher('/todos', {
+          method: 'DELETE',
+        });
+
+        alert(`Deleted ${res.count} items`);
+        location.reload();
+      });
+
+      // Load todo list
+      const { todos: todoList } = await fetcher('/todos', {
+        method: 'GET',
+      });
+
+      todoList.forEach((todo) => {
+        addToList(todo);
+      });
+    </script>
+  </body>
+</html>

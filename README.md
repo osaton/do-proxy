@@ -10,9 +10,9 @@ This library handles request building, fetching and responding behind the scenes
 npm install do-proxy
 ```
 
-## Demo
+## Examples
 
-Try it out at [Stackblitz](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/basic?file=index.ts&terminal='start-stackblitz').
+- [Todo app](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/todo-storage?file=index.ts&terminal='start-stackblitz') utilizing `storage` and `batch` methods
 
 ## Usage briefly
 

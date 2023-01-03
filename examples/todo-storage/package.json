@@ -1,0 +1,17 @@
+{
+  "name": "do-proxy-todo-storage",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "WRANGLER_SEND_METRICS=false wrangler dev --local --port 6283",
+    "start-stackblitz": "WRANGLER_SEND_METRICS=false wrangler dev --local --port 6283",
+    "wrangler": "wrangler"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20221111.1",
+    "wrangler": "^2.5.0"
+  },
+  "dependencies": {
+    "do-proxy": "^1.2.0",
+    "hono": "^2.7.1"
+  }
+}
