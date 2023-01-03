@@ -12,7 +12,8 @@ npm install do-proxy
 
 ## Examples
 
-- [Todo app](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/todo-storage?file=index.ts&terminal='start-stackblitz') utilizing `storage` and `batch` methods
+- [Todo app](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/todo-storage?file=src%2Findex.ts&terminal='start-stackblitz') utilizing `storage` and `batch` methods
+- [Todo app](https://stackblitz.com/fork/github/osaton/do-proxy/tree/main/examples/todo-class?file=src%2Findex.ts&terminal='start-stackblitz') extending `DOProxy` class and utilizing `class` methods
 
 ## Usage briefly
 
