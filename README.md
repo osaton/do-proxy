@@ -33,8 +33,8 @@ Inside your Worker's `fetch` method:
 ```ts
 // Get `DurableObjectNamespace` wrapped inside our proxy
 const MY_DO_BINDING = MyDOClass.wrap(env.MY_DO_BINDING);
-// You can use the default namespace methods.
-const stub = MY_DO_BINDING.get(MY_DO_BINDING.idFromName('my-name'));
+// You can use the default namespace methods or shorthand methods `getByName` & `getById`
+const stub = MY_DO_BINDING.getByName('name');
 
 // You can access instance's storage methods
 const res1 = await stub.storage.get('my-store');
@@ -60,7 +60,7 @@ export { DOProxy as Todo };
 export default {
   async fetch(req: Request, env: any) {
     const TODO = DOProxy.wrap(env.TODO);
-    const stub = TODO.get(TODO.idFromName('my-todos'));
+    const stub = TODO.getByName('name');
     await todo.storage.put('todo:1', 'has to be done');
     const list = Object.fromEntries(await todo.storage.list());
     return Response.json(list);
@@ -91,8 +91,7 @@ class Todo extends DOProxy {
 }
 export default {
   async fetch(req: Request, env: any) {
-    const TODO = Todo.wrap(env.TODO);
-    const stub = TODO.get(TODO.idFromName('my-todos'));
+    const stub = Todo.wrap(env.TODO).getByName('my-todos');
     const id = await stub.class.add('has to be done');
     const todo = await stub.class.get(id);
     return Response.json({
@@ -150,6 +149,11 @@ It has all the same methods that `DurableObjectNamespace`:
 - `idFromName(name: string): DurableObjectId`
 - `idFromString(id: string): DurableObjectId`
 - `get(id: DurableObjectId): DurableObjectStubProxy`
+
+It also has some custom shorthand methods:
+
+- `getByName(name: string): DurableObjectStubProxy`: Shorthand for `DO.get(DO.idFromName('foo'))`
+- `getByString(id: string): DurableObjectStubProxy`: Shorthand for `DO.get(DO.idFromString(hexId))`
 
 `get` Method returns `DurableObjectStubProxy` instead of `DurableObjectStub`.
 
