@@ -43,9 +43,24 @@ declare abstract class DurableObjectNamespaceProxyClass<T>
   get(id: DurableObjectId): DurableObjectStubProxy<T>;
 }
 
+interface DurableObjectNamespaceExtended<T> extends DurableObjectNamespaceProxyClass<T> {
+  /**
+   * Get by name
+   *
+   * Shorthand for `DurableObjectNamespace.get(DurableObjectNamespace.idFromName('name'))`
+   */
+  getByName: (name: string) => DurableObjectStubProxy<T>;
+  /**
+   * Get by id
+   *
+   * Shorthand for `DurableObjectNamespace.get(DurableObjectNamespace.idFromString(hexId))`
+   */
+  getById: (id: string) => DurableObjectStubProxy<T>;
+}
+
 export type DurableObjectNamespaceProxy<T> = T extends ConstructorType
-  ? DurableObjectNamespaceProxyClass<InstanceType<T>>
-  : DurableObjectNamespaceProxyClass<T>;
+  ? DurableObjectNamespaceExtended<InstanceType<T>>
+  : DurableObjectNamespaceExtended<T>;
 
 type DurableObjectProxy<T> = {
   /**
@@ -318,10 +333,26 @@ export class DOProxy {
 
     return new Proxy(binding, {
       get: (target, prop) => {
-        // We only intercept `get` method so we can return proxied stub
+        // `DurableObjectNamespaceProxy.get`
         if (prop === 'get') {
           return function (id: DurableObjectId) {
             const stub = binding.get(id);
+            return getProxy<InstanceType<T>>(stub, methods);
+          };
+        }
+
+        // `DurableObjectNamespaceProxy.getByName`
+        if (prop === 'getByName') {
+          return function (name: string) {
+            const stub = binding.get(binding.idFromName(name));
+            return getProxy<InstanceType<T>>(stub, methods);
+          };
+        }
+
+        // `DurableObjectNamespaceProxy.getById`
+        if (prop === 'getById') {
+          return function (id: string) {
+            const stub = binding.get(binding.idFromString(id));
             return getProxy<InstanceType<T>>(stub, methods);
           };
         }
