@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/osaton/do-proxy/compare/v1.2.2...v1.3.0) (2023-01-03)
+
+
+### Features
+
+* **docs:** add todo app example ([8a8523b](https://github.com/osaton/do-proxy/commit/8a8523bf41936950474509129bd6c0456a818cff))
+* **examples:** add todo-class example ([6f50928](https://github.com/osaton/do-proxy/commit/6f50928266d70d774e40bb8125ba954bf11408fa))
+
 ## [1.2.2](https://github.com/osaton/do-proxy/compare/v1.2.1...v1.2.2) (2023-01-03)
 
 
