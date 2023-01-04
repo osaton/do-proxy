@@ -1,4 +1,9 @@
-# Durable Object Proxy
+# Durable Object Proxy (do-proxy)
+
+[![Types included](https://badgen.net/npm/types/do-proxy?style=flat-square)](https://www.npmjs.com/package/do-proxy)
+[![Bundle Size](https://badgen.net/bundlephobia/minzip/do-proxy?style=flat-square)](https://bundlephobia.com/result?p=do-proxy)
+[![Bundle Size](https://badgen.net/bundlephobia/dependency-count/do-proxy?style=flat-square)](https://bundlephobia.com/result?p=do-proxy)
+[![Version](https://img.shields.io/npm/v/do-proxy.svg?style=flat-square)](https://npmjs.com/package/do-proxy)
 
 > Simple interface for accessing [Cloudflare Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects/)' storage and class methods.
 
@@ -123,7 +128,7 @@ return Response.json(Object.fromEntries(list as Map<string, string>));
 
 Available methods: `DurableObjectStubProxy.storage.get|put|delete|deleteAll|list|getAlarm|setAlarm|deleteAlarm|sync`
 
-## Batch
+## `batch` method
 
 If you need to invoke Durable Object instance's multiple times, `DurableObjectStubProxy` has a `batch` method which allows you to run multiple method calls inside one fetch request.
 
