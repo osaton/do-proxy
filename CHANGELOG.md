@@ -1,3 +1,11 @@
+## [1.3.1](https://github.com/osaton/do-proxy/compare/v1.3.0...v1.3.1) (2023-01-04)
+
+
+### Bug Fixes
+
+* `batch` returns a promise ([3b95bb5](https://github.com/osaton/do-proxy/commit/3b95bb504ca5d71c026b9950d51288979e22a4d4))
+* fix `batch` method callback return type checks ([d339cbf](https://github.com/osaton/do-proxy/commit/d339cbf4877638e910f4507b08d84e700a6b39b8))
+
 # [1.3.0](https://github.com/osaton/do-proxy/compare/v1.2.2...v1.3.0) (2023-01-03)
 
 
