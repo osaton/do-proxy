@@ -69,8 +69,8 @@ describe('DOProxy', () => {
     });
 
     it('Should be able to batch commands with `storage` methods', async () => {
-      const storage = DOProxy.from(TEST_DO);
-      const test = storage.get('test');
+      const storage = DOProxy.wrap(TEST_DO);
+      const test = storage.getByName('test');
 
       const res = await test.batch(() => {
         return [test.storage.put('test-batch', 'first'), test.storage.get('test-batch')];
@@ -105,21 +105,35 @@ describe('DOProxy', () => {
         const instance = Test.from<Test>(TEST_DO).get('test');
       }).not.toThrow();
     });
-  });
 
-  /*
-  it('Should throw if returned callback array contains invalid data', async () => {
-    const storage = DOProxy.from(TEST_DO);
-    const test = storage.get('test');
+    describe('#batch', () => {
+      it('Should throw if array returned from callback contains invalid data', async () => {
+        const stub = DOProxy.wrap(TEST_DO).getByName('test');
 
-    const res = expect(() => {
-      test.batch(() => {
-        return [test.storage.put('test-batch', 'first'), () => {}, test.storage.get('test-batch')];
+        await expect(
+          // @ts-expect-error
+          stub.batch(() => {
+            return [
+              stub.storage.put('test-batch', 'first'),
+              () => {},
+              stub.storage.get('test-batch'),
+            ];
+          })
+        ).rejects.toThrow(
+          'Returned array has invalid job at index 1. Only `storage` and `class` methods supported.'
+        );
       });
-    }).toThrow(
-      'DOProxy.batch: Returned array has invalid job at index 1. Only `DOProxy` methods supported.'
-    );
-  });*/
+
+      it('Should throw if callback returns something else than array', async () => {
+        const stub = DOProxy.wrap(TEST_DO).getByName('test');
+
+        await expect(
+          // @ts-expect-error
+          stub.batch(() => false)
+        ).rejects.toThrow('`batch` callback should return an array, got: boolean');
+      });
+    });
+  });
 });
 
 export {};

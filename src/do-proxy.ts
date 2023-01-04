@@ -215,17 +215,18 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
           return async function (jobs: () => any[]) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
             proxyMode = 'batch';
-            const configs = await resolveConfigs(await jobs());
-            if (!Array.isArray(configs)) {
-              throw Error(
-                `\`batch\` callback should return array of \`DOProxyInstance\` operations, got: ${typeof configs}`
-              );
+            const callbackRes = await jobs();
+
+            if (!Array.isArray(callbackRes)) {
+              throw Error(`\`batch\` callback should return an array, got: ${typeof callbackRes}`);
             }
+
+            const configs = await resolveConfigs(callbackRes);
 
             configs.forEach((cfg, index) => {
               if (!cfg?.type) {
                 throw Error(
-                  `DOStorageProxy.batch: Returned array has invalid job at index ${index}. Only \`DOProxyInstance\` methods supported.`
+                  `Returned array has invalid job at index ${index}. Only \`storage\` and \`class\` methods supported.`
                 );
               }
             });
