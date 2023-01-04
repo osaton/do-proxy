@@ -105,7 +105,7 @@ type UnwrapPromises<Promises> = Promises extends [Promise<infer Value>, ...infer
   ? [Value, ...UnwrapPromises<Rest>]
   : [];
 
-type BatchResponse<T> = UnwrapPromises<T>;
+type BatchResponse<T> = Promise<UnwrapPromises<T>>;
 
 type ConstructorType = abstract new (...args: any) => any;
 

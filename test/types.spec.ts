@@ -59,7 +59,7 @@ describe('DOProxy types', () => {
   });
 
   it('should provide correct types', async () => {
-    const test = TestDO.from<TestDO>(TEST_DO).get('test');
+    const test = TestDO.wrap(TEST_DO).getByName('test');
 
     // class methods
     test.class.getStorage().then((res) => res.charAt(0));
@@ -67,11 +67,10 @@ describe('DOProxy types', () => {
     // Storage methods
     test.storage.get('foo').then((res) => res);
 
-    // Batch
-    await test.batch(() => [
-      test.storage.delete('test'),
-      test.class.setStorage('foo', 'bar', 'baz'),
-    ]);
+    // batch should return a Promise
+    test
+      .batch(() => [test.storage.delete('test'), test.class.setStorage('foo', 'bar', 'baz')])
+      .then((res) => res);
 
     // Batch return types
     const [bool, arr, asString] = await test.batch(() => [
