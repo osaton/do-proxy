@@ -1,6 +1,8 @@
 const { TEST_DO } = getMiniflareBindings();
 
+import { getProxyStorage, storageMethods } from '../src/storage';
 import { DOProxy } from '../src/do-proxy';
+import { RequestConfig } from '../src/request-config';
 
 describe('Storage', () => {
   it('should handle map conversion for `storage.list` method', async () => {
@@ -14,6 +16,58 @@ describe('Storage', () => {
     map.set('foo', 'foo');
     map.set('bar', 'bar');
     expect(res).toEqual([null, null, map]);
+  });
+
+  describe('getProxyStorage', () => {
+    it('should have supported storage methods', () => {
+      const stub = { test: 'foo' } as unknown as DurableObjectStub;
+      const fetcher = (stub: any, config: RequestConfig) => {
+        console.log(stub, config);
+      };
+      const storage = getProxyStorage(stub, fetcher);
+
+      expect(Object.keys(storage.methods)).toEqual(storageMethods);
+    });
+
+    it('should fire fetcher if in `execution` mode', async () => {
+      const stub = { test: 'foo' } as unknown as DurableObjectStub;
+      const fetcher = (stub: any, config: RequestConfig) => {
+        return {
+          stub,
+          config,
+        };
+      };
+      const storage = getProxyStorage(stub, fetcher);
+
+      const res = await storage.methods.get('key');
+      expect(res).toEqual({
+        stub,
+        config: {
+          args: ['key'],
+          prop: 'get',
+          type: 'storage',
+        },
+      });
+    });
+
+    it('should return config if in `batch` mode', async () => {
+      const stub = { test: 'foo' } as unknown as DurableObjectStub;
+      const fetcher = (stub: any, config: RequestConfig) => {
+        return {
+          stub,
+          config,
+        };
+      };
+      const storage = getProxyStorage(stub, fetcher);
+      storage.setMode('batch');
+
+      const res = await storage.methods.get('key');
+      expect(res).toEqual({
+        args: ['key'],
+        prop: 'get',
+        type: 'storage',
+      });
+    });
   });
 });
 

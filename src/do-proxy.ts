@@ -1,27 +1,8 @@
 import { getRequestConfig, RequestConfig } from './request-config';
-const MODULE_NAME = 'do-proxy';
-const storageMethods: SupportedStorageMethods[] = [
-  'delete',
-  'deleteAlarm',
-  'deleteAll',
-  'get',
-  'getAlarm',
-  'list',
-  'put',
-  'setAlarm',
-  'sync',
-];
+import { Storage, getProxyStorage } from './storage';
+export type { Storage };
 
-type SupportedStorageMethods =
-  | 'delete'
-  | 'deleteAlarm'
-  | 'deleteAll'
-  | 'get'
-  | 'getAlarm'
-  | 'list'
-  | 'put'
-  | 'setAlarm'
-  | 'sync';
+const MODULE_NAME = 'do-proxy';
 
 interface FetchResponse {
   data: any;
@@ -92,8 +73,6 @@ interface DOProxyNamespace<T> {
   getByString: (id: string) => DurableObjectStubProxy<T>;
 }
 
-export type Storage = Pick<DurableObjectStorage, SupportedStorageMethods>;
-
 type UnwrapPromises<Promises> = Promises extends [Promise<infer Value>, ...infer Rest]
   ? [Value, ...UnwrapPromises<Rest>]
   : [];
@@ -156,21 +135,6 @@ async function resolveConfigs(configs: any[]) {
 function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
   let proxyMode = 'execute';
 
-  function getProxyStorage() {
-    const obj: Record<string, () => {}> = {};
-    storageMethods.forEach((methodName) => {
-      obj[methodName] = async function (...args) {
-        const config = getRequestConfig('storage', methodName, args);
-        if (proxyMode === 'batch') {
-          return config;
-        }
-        return doFetch(stub, config);
-      };
-    });
-
-    return obj as unknown as Storage;
-  }
-
   function getProxyClass() {
     const obj: Record<string, () => {}> = {};
     for (const prop of methods) {
@@ -186,7 +150,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
     return obj;
   }
 
-  const storage = getProxyStorage();
+  const storage = getProxyStorage(stub, doFetch);
   const proxyClass = getProxyClass();
 
   return new Proxy(
@@ -200,6 +164,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
           return async function (jobs: () => any[]) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
             proxyMode = 'batch';
+            storage.setMode('batch');
             const callbackRes = await jobs();
 
             if (!Array.isArray(callbackRes)) {
@@ -215,7 +180,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
                 );
               }
             });
-
+            storage.setMode('execute');
             proxyMode = 'execute';
 
             // Handle all jobs with one fetch
@@ -228,7 +193,7 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
 
         // Handle storage methods
         if (prop === 'storage') {
-          return storage;
+          return storage.methods;
         }
 
         const value = (target as any)[prop];
