@@ -1,3 +1,4 @@
+import { getRequestConfig, RequestConfig } from './request-config';
 const MODULE_NAME = 'do-proxy';
 const storageMethods: SupportedStorageMethods[] = [
   'delete',
@@ -21,14 +22,6 @@ type SupportedStorageMethods =
   | 'put'
   | 'setAlarm'
   | 'sync';
-
-interface RequestConfig {
-  type: RequestConfigType;
-  prop: string;
-  args: any[];
-}
-
-type RequestConfigType = 'function' | 'storage';
 
 interface FetchResponse {
   data: any;
@@ -120,14 +113,6 @@ type GetClassMethods<T> = {
       PromisifyFunction<T[K]>
     : never;
 };
-
-function getRequestConfig(type: RequestConfigType, prop: PropertyKey, args: any[]): RequestConfig {
-  return {
-    type,
-    prop: String(prop),
-    args: args,
-  };
-}
 
 async function handleStorageFetch(state: DurableObjectState, config: RequestConfig) {
   return (state.storage as any)[config.prop](...config.args);
