@@ -1,6 +1,6 @@
 const { TEST_DO } = getMiniflareBindings();
 
-import { getProxyStorage, storageMethods } from '../src/storage';
+import { storageMethods, getProxyStorageHandler } from '../src/storage';
 import { DOProxy } from '../src/do-proxy';
 import { RequestConfig } from '../src/request-config';
 
@@ -24,12 +24,12 @@ describe('Storage', () => {
       const fetcher = (stub: any, config: RequestConfig) => {
         console.log(stub, config);
       };
-      const storage = getProxyStorage(stub, fetcher);
+      const storage = getProxyStorageHandler(stub, fetcher);
 
       expect(Object.keys(storage.methods)).toEqual(storageMethods);
     });
 
-    it('should fire fetcher if in `execution` mode', async () => {
+    it('methods should fire fetcher if in `execution` mode', async () => {
       const stub = { test: 'foo' } as unknown as DurableObjectStub;
       const fetcher = (stub: any, config: RequestConfig) => {
         return {
@@ -37,7 +37,7 @@ describe('Storage', () => {
           config,
         };
       };
-      const storage = getProxyStorage(stub, fetcher);
+      const storage = getProxyStorageHandler(stub, fetcher);
 
       const res = await storage.methods.get('key');
       expect(res).toEqual({
@@ -50,7 +50,7 @@ describe('Storage', () => {
       });
     });
 
-    it('should return config if in `batch` mode', async () => {
+    it('methods should return config if in `batch` mode', async () => {
       const stub = { test: 'foo' } as unknown as DurableObjectStub;
       const fetcher = (stub: any, config: RequestConfig) => {
         return {
@@ -58,7 +58,7 @@ describe('Storage', () => {
           config,
         };
       };
-      const storage = getProxyStorage(stub, fetcher);
+      const storage = getProxyStorageHandler(stub, fetcher);
       storage.setMode('batch');
 
       const res = await storage.methods.get('key');

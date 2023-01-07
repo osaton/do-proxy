@@ -1,5 +1,6 @@
+import { getClassMethods, getProxyClassHandler } from './class';
 import { getRequestConfig, RequestConfig } from './request-config';
-import { Storage, getProxyStorage } from './storage';
+import { Storage, getProxyStorageHandler } from './storage';
 export type { Storage };
 
 const MODULE_NAME = 'do-proxy';
@@ -133,25 +134,8 @@ async function resolveConfigs(configs: any[]) {
 }
 
 function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
-  let proxyMode = 'execute';
-
-  function getProxyClass() {
-    const obj: Record<string, () => {}> = {};
-    for (const prop of methods) {
-      obj[prop] = async function (...args: any[]) {
-        const config = getRequestConfig('function', prop, args);
-        if (proxyMode === 'batch') {
-          return config;
-        }
-        return doFetch(stub, config);
-      };
-    }
-
-    return obj;
-  }
-
-  const storage = getProxyStorage(stub, doFetch);
-  const proxyClass = getProxyClass();
+  const storageHandler = getProxyStorageHandler(stub, doFetch);
+  const classHandler = getProxyClassHandler(methods, stub, doFetch);
 
   return new Proxy(
     {
@@ -163,8 +147,9 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
         if (prop === 'batch') {
           return async function (jobs: () => any[]) {
             // Switching to batch mode, which skips fetching and only returns configs for our jobs
-            proxyMode = 'batch';
-            storage.setMode('batch');
+            storageHandler.setMode('batch');
+            classHandler.setMode('batch');
+
             const callbackRes = await jobs();
 
             if (!Array.isArray(callbackRes)) {
@@ -180,20 +165,20 @@ function getProxy<T>(stub: DurableObjectStub, methods: Set<string>) {
                 );
               }
             });
-            storage.setMode('execute');
-            proxyMode = 'execute';
+            storageHandler.setMode('execute');
+            classHandler.setMode('execute');
 
             // Handle all jobs with one fetch
             return doFetch(stub, configs);
           };
         }
         if (prop === 'class' && methods.size > 0) {
-          return proxyClass;
+          return classHandler.methods;
         }
 
         // Handle storage methods
         if (prop === 'storage') {
-          return storage.methods;
+          return storageHandler.methods;
         }
 
         const value = (target as any)[prop];
@@ -337,24 +322,4 @@ export class DOProxy {
       },
     };
   }
-}
-
-function getClassMethods(proto: DOProxy) {
-  const exclude = ['constructor', 'fetch'];
-
-  const methods: Set<string> = new Set();
-  let o = proto;
-  while (o !== null) {
-    for (let name of Object.getOwnPropertyNames(o)) {
-      if (
-        !exclude.includes(name) &&
-        typeof (proto as any)[name] === 'function' &&
-        proto.hasOwnProperty(name)
-      ) {
-        methods.add(name);
-      }
-    }
-    o = Object.getPrototypeOf(o);
-  }
-  return methods;
 }

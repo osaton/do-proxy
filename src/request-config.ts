@@ -1,4 +1,4 @@
-type RequestConfigType = 'function' | 'storage';
+export type RequestConfigType = 'function' | 'storage';
 
 export interface RequestConfig {
   type: RequestConfigType;
