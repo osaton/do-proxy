@@ -22,7 +22,7 @@
   },
   "tsup": {
     "entry": [
-      "src/do-proxy.ts"
+      "src/index.ts"
     ],
     "splitting": false,
     "sourcemap": true,
@@ -57,7 +57,7 @@
     "@cloudflare/workers-types": "^4.20221111.1"
   },
   "scripts": {
-    "doc": "typedoc src/do-proxy.ts",
+    "doc": "typedoc src/index.ts",
     "prepublish": "npm run test && npm run build",
     "preversion": "npm run test && npm run build",
     "start": "wrangler dev",
