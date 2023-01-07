@@ -11,6 +11,7 @@ describe('DOProxy', () => {
       const id2 = DO.newUniqueId();
       const fromString = DO.idFromString(id.toString());
 
+      expect(fromString.equals(id)).toEqual(true);
       expect(id).toEqual(TEST_DO.idFromName('test'));
       expect(typeof id2.equals).toEqual('function');
     });
@@ -102,7 +103,7 @@ describe('DOProxy', () => {
       }
 
       expect(() => {
-        const instance = Test.from<Test>(TEST_DO).get('test');
+        Test.from<Test>(TEST_DO).get('test');
       }).not.toThrow();
     });
 

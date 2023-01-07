@@ -1,5 +1,5 @@
 import { RequestConfig } from './../src/request-config';
-import { getProxyMethodHandler, ProxyMethodHandler } from '../src/proxy';
+import { getProxyMethodHandler } from '../src/proxy';
 
 async function fetcher(stub: DurableObjectStub, config: RequestConfig) {
   return {

@@ -1,5 +1,3 @@
-import { DurableObjectStubProxy, DurableObjectNamespaceProxy } from '../src/do-proxy';
-import { TestDO } from '../worker/test-do';
 import { DOProxy } from '../src/do-proxy';
 const { TEST_DO } = getMiniflareBindings();
 

@@ -17,3 +17,11 @@ export function getRequestConfig(
     args: args,
   };
 }
+
+export async function unwrapConfigs(configs: (RequestConfig | Promise<RequestConfig>)[]) {
+  const resolved = [];
+  for (const cfg of configs) {
+    resolved.push(await Promise.resolve(cfg));
+  }
+  return resolved;
+}

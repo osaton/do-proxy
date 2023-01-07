@@ -1,24 +1,6 @@
 import { getRequestConfig, RequestConfig, RequestConfigType } from './request-config';
 type ProxyMode = 'batch' | 'execute';
 
-type As<A, B> = A extends B ? A : never;
-
-type KeysToProperties<T, Value, output = {}> = T extends [infer First, ...infer Rest]
-  ? First extends string
-    ? KeysToProperties<
-        Rest,
-        Value,
-        output & {
-          [K in `${First}`]: Value;
-        }
-      >
-    : output
-  : output;
-
-type KeysToProps<T, Value> = {
-  [K in keyof T as T[K] extends string ? `${T[K]}` : never]: Value;
-};
-
 export type ProxyMethodHandler<T extends [string, ...string[]]> = {
   mode: ProxyMode;
   setMode: (mode: ProxyMode) => void;

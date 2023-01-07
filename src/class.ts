@@ -1,6 +1,6 @@
 import { DOProxy } from './do-proxy';
-import { getProxyMethodHandler, ProxyMethodHandler } from './proxy';
-import { getRequestConfig, RequestConfig } from './request-config';
+import { getProxyMethodHandler } from './proxy';
+import { RequestConfig } from './request-config';
 
 export function getProxyClassHandler<T extends Set<string>>(
   methods: T,

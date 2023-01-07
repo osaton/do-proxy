@@ -1,5 +1,5 @@
-import { getProxyMethodHandler, ProxyMethodHandler } from './proxy';
-import { getRequestConfig, RequestConfig } from './request-config';
+import { getProxyMethodHandler } from './proxy';
+import { RequestConfig } from './request-config';
 type SupportedStorageMethods =
   | 'delete'
   | 'deleteAlarm'

@@ -1,5 +1,3 @@
-const { TEST_DO } = getMiniflareBindings();
-
 import { getClassMethods, getProxyClassHandler } from '../src/class';
 import { TestDO } from '../worker/test-do';
 import { RequestConfig } from '../src/request-config';
