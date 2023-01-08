@@ -1,3 +1,15 @@
+## [1.3.2](https://github.com/osaton/do-proxy/compare/v1.3.1...v1.3.2) (2023-01-08)
+
+
+### Bug Fixes
+
+* fix `tsup` output file names ([5f3d58f](https://github.com/osaton/do-proxy/commit/5f3d58f5d1c206b71dd468bc339d4c2394512294))
+
+
+### Performance Improvements
+
+* memoize stub proxy factory for performance gains ([c09ef55](https://github.com/osaton/do-proxy/commit/c09ef554499944b53fc9287ea6be3939524651ec))
+
 ## [1.3.1](https://github.com/osaton/do-proxy/compare/v1.3.0...v1.3.1) (2023-01-04)
 
 
