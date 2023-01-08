@@ -57,6 +57,7 @@
     "@cloudflare/workers-types": "^4.20221111.1"
   },
   "scripts": {
+    "perf": "node performance.js",
     "doc": "typedoc src/index.ts",
     "prepublish": "npm run test && npm run build",
     "preversion": "npm run test && npm run build",
