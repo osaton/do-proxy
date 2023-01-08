@@ -4,10 +4,9 @@ import { RequestConfig } from './request-config';
 
 export function getProxyClassHandler<T extends Set<string>>(
   methods: T,
-  stub: DurableObjectStub,
   fetcher: (stub: DurableObjectStub, config: RequestConfig) => any
 ) {
-  return getProxyMethodHandler('function', Array.from(methods), stub, fetcher);
+  return getProxyMethodHandler('function', Array.from(methods), fetcher);
 }
 
 export function getClassMethods<T extends DOProxy>(proto: T) {

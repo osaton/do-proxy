@@ -55,7 +55,7 @@ describe('DurableObjectStubProxy', () => {
   });
 
   describe('With extended class', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const DO = TestDO.wrap(TEST_DO);
       stubTest = DO.get(DO.newUniqueId());
     });
@@ -88,6 +88,12 @@ describe('DurableObjectStubProxy', () => {
     });
 
     it('should have access to class methods', async () => {
+      const TEST2 = DOProxy.wrap(TEST_DO);
+      const stub1 = TEST2.getByName('test');
+      // @ts-expect-error
+      stub1.class;
+      const DO = TestDO.wrap(TEST_DO);
+      stubTest = DO.get(DO.newUniqueId());
       await stubTest.class.funcWithoutAsync();
       expect(Object.keys(stubTest.class)).toEqual(['getStorage', 'setStorage', 'funcWithoutAsync']);
       expect(typeof stubTest.class.funcWithoutAsync).toEqual('function');
@@ -97,6 +103,7 @@ describe('DurableObjectStubProxy', () => {
       const [, res] = await stubTest.batch(() => [
         stubTest.storage.put('test', 'value'),
         stubTest.storage.get('test'),
+        stubTest.class.getStorage(),
       ]);
 
       expect(res).toEqual('value');

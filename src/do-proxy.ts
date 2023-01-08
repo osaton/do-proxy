@@ -1,4 +1,4 @@
-import { getStubProxy, DurableObjectStubProxy } from './stub';
+import { getStubProxyFactory, DurableObjectStubProxy, StubFactory } from './stub';
 import type { RequestConfig } from './request-config';
 import type { Storage } from './storage';
 export type { Storage, DurableObjectStubProxy };
@@ -45,9 +45,20 @@ async function handleStorageFetch(state: DurableObjectState, config: RequestConf
   return (state.storage as any)[config.prop](...config.args);
 }
 
+const stubFactoryMap: Map<unknown, StubFactory> = new Map();
+
+function getCachedStubFactory<Proto extends DOProxy = DOProxy>(proto: Proto): StubFactory {
+  const factory = stubFactoryMap.get(proto);
+  if (factory) {
+    return factory;
+  }
+
+  const newFactory = getStubProxyFactory(proto);
+  stubFactoryMap.set(proto, newFactory);
+  return newFactory;
+}
 export class DOProxy {
   #state: DurableObjectState;
-
   constructor(state: DurableObjectState, env?: any) {
     this.#state = state;
   }
@@ -114,18 +125,18 @@ export class DOProxy {
   /**
    * Get `DurableObjectNamespace` wrapped inside proxy
    */
-  static wrap<T extends ConstructorType>(
+  static wrap<T extends typeof DOProxy>(
     this: T,
     binding: DurableObjectNamespace
   ): DurableObjectNamespaceProxy<T> {
-    const classProto = this.prototype;
+    const factory = getCachedStubFactory(this.prototype);
     return new Proxy(binding, {
       get: (target, prop) => {
         // `DurableObjectNamespaceProxy.get`
         if (prop === 'get') {
           return function (id: DurableObjectId) {
             const stub = binding.get(id);
-            return getStubProxy<InstanceType<T>>(stub, classProto);
+            return factory(stub);
           };
         }
 
@@ -133,7 +144,7 @@ export class DOProxy {
         if (prop === 'getByName') {
           return function (name: string) {
             const stub = binding.get(binding.idFromName(name));
-            return getStubProxy<InstanceType<T>>(stub, classProto);
+            return factory(stub);
           };
         }
 
@@ -141,7 +152,7 @@ export class DOProxy {
         if (prop === 'getById') {
           return function (id: string) {
             const stub = binding.get(binding.idFromString(id));
-            return getStubProxy<InstanceType<T>>(stub, classProto);
+            return factory(stub);
           };
         }
 
@@ -158,19 +169,19 @@ export class DOProxy {
    * @deprecated Use `wrap` method instead which allows access to DurableObjectNamespace methods without type quirks
    */
   static from<T extends DOProxy>(binding: DurableObjectNamespace): DOProxyNamespace<T> {
-    const classProto = this.prototype;
+    const factory = getCachedStubFactory(this.prototype);
     return {
       get(name: string) {
         const stub = binding.get(binding.idFromName(name));
-        return getStubProxy<T>(stub, classProto);
+        return factory(stub) as any;
       },
       getById(id: DurableObjectId) {
         const stub = binding.get(id);
-        return getStubProxy<T>(stub, classProto);
+        return factory(stub) as any;
       },
       getByString(id: string) {
         const stub = binding.get(binding.idFromString(id));
-        return getStubProxy<T>(stub, classProto);
+        return factory(stub) as any;
       },
     };
   }

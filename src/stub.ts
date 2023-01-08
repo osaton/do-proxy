@@ -3,6 +3,7 @@ import { unwrapConfigs } from './request-config';
 import { getProxyStorageHandler, Storage } from './storage';
 import type { DOProxy } from './do-proxy';
 import type { RequestConfig } from './request-config';
+import { ProxyMethodHandler } from './proxy';
 
 type PromisifyFunction<TFunc extends (...args: any) => any> = ReturnType<TFunc> extends Promise<any>
   ? TFunc
@@ -53,14 +54,38 @@ export type DurableObjectStubProxy<T> = keyof GetClassMethods<T> extends never
   ? Omit<DurableObjectProxy<T>, 'class'>
   : DurableObjectProxy<T>;
 
-export function getStubProxy<T, Proto extends DOProxy = DOProxy>(
-  stub: DurableObjectStub,
-  classProto: Proto
-) {
-  const methods = getClassMethods(classProto);
-  const storageHandler = getProxyStorageHandler(stub, doStubFetch);
-  const classHandler = getProxyClassHandler(methods, stub, doStubFetch);
+export function prepareMethods<Proto extends DOProxy = DOProxy>(classProto: Proto) {
+  return {
+    methods: getClassMethods(classProto),
+  };
+}
 
+export type StubFactory<T = DOProxy> = (stub: DurableObjectStub) => DurableObjectStubProxy<T>;
+/**
+ * Create factory function for making subsequent proxy stubs faster to build
+ */
+export function getStubProxyFactory<Proto extends DOProxy = DOProxy>(
+  classProto: Proto
+): StubFactory<Proto> {
+  const methods = getClassMethods(classProto);
+  const storageHandler = getProxyStorageHandler(doStubFetch);
+  const classHandler = getProxyClassHandler(methods, doStubFetch);
+
+  return (stub: DurableObjectStub) => {
+    const storage = Object.create(storageHandler);
+    const classH = Object.create(classHandler);
+    storage.setStub(stub);
+    classH.setStub(stub);
+    return getStubProxy<Proto>(stub, classH, storage);
+  };
+}
+
+function getStubProxy<T>(
+  stub: DurableObjectStub,
+  classHandler: ProxyMethodHandler,
+  storageHandler: ProxyMethodHandler
+) {
+  const hasClassMethods = Object.keys(classHandler.methods).length > 0;
   return new Proxy(
     {
       id: stub.id,
@@ -96,7 +121,7 @@ export function getStubProxy<T, Proto extends DOProxy = DOProxy>(
             return doStubFetch(stub, configs);
           };
         }
-        if (prop === 'class' && methods.size > 0) {
+        if (prop === 'class' && hasClassMethods) {
           return classHandler.methods;
         }
 

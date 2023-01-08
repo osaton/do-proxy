@@ -9,12 +9,9 @@ async function fetcher(stub: DurableObjectStub, config: RequestConfig) {
 }
 describe('getProxyMethodHandler', () => {
   it('should work with proper parameters', () => {
-    const test = getProxyMethodHandler(
-      'function',
-      ['method1', 'method2'],
-      {} as DurableObjectStub,
-      fetcher
-    );
+    const test = getProxyMethodHandler('function', ['method1', 'method2'], fetcher);
+
+    test.setStub({} as DurableObjectStub);
 
     expect(Object.keys(test.methods)).toEqual(['method1', 'method2']);
     expect(typeof test.methods.method1).toEqual('function');
@@ -22,8 +19,8 @@ describe('getProxyMethodHandler', () => {
 
   it('should fire fetcher with execute mode when calling methods', async () => {
     const stub = { test: 'foo' } as unknown as DurableObjectStub;
-    let handler = getProxyMethodHandler('function', ['method1'], stub, fetcher);
-
+    let handler = getProxyMethodHandler('function', ['method1'], fetcher);
+    handler.setStub(stub);
     let res = await handler.methods.method1('param1', 'param2');
     expect(Object.keys(handler.methods)).toEqual(['method1']);
     expect(typeof handler.methods.method1).toEqual('function');
@@ -37,7 +34,8 @@ describe('getProxyMethodHandler', () => {
       },
     });
 
-    handler = getProxyMethodHandler('storage', ['storageMethod'], stub, fetcher);
+    handler = getProxyMethodHandler('storage', ['storageMethod'], fetcher);
+    handler.setStub(stub);
     expect(Object.keys(handler.methods)).toEqual(['storageMethod']);
     expect(typeof handler.methods.storageMethod).toEqual('function');
 

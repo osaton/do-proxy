@@ -22,9 +22,10 @@ describe('Storage', () => {
     it('should have supported storage methods', () => {
       const stub = { test: 'foo' } as unknown as DurableObjectStub;
       const fetcher = (stub: any, config: RequestConfig) => {
-        console.log(stub, config);
+        throw Error('should not be called in this test');
       };
-      const storage = getProxyStorageHandler(stub, fetcher);
+      const storage = getProxyStorageHandler(fetcher);
+      storage.setStub(stub);
 
       expect(Object.keys(storage.methods)).toEqual(storageMethods);
     });
@@ -37,8 +38,8 @@ describe('Storage', () => {
           config,
         };
       };
-      const storage = getProxyStorageHandler(stub, fetcher);
-
+      const storage = getProxyStorageHandler(fetcher);
+      storage.setStub(stub);
       const res = await storage.methods.get('key');
       expect(res).toEqual({
         stub,
@@ -58,7 +59,8 @@ describe('Storage', () => {
           config,
         };
       };
-      const storage = getProxyStorageHandler(stub, fetcher);
+      const storage = getProxyStorageHandler(fetcher);
+      storage.setStub(stub);
       storage.setMode('batch');
 
       const res = await storage.methods.get('key');

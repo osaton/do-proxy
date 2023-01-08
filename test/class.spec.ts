@@ -4,7 +4,7 @@ import { RequestConfig } from '../src/request-config';
 
 describe('getClassMethods', () => {
   it('should get defined functions from prototype', () => {
-    const methods = getClassMethods(TestDO.prototype);
+    let methods = getClassMethods(TestDO.prototype);
     const set = new Set();
     set.add('setStorage');
     set.add('getStorage');
@@ -17,10 +17,11 @@ describe('getProxyClassHandler', () => {
   it('should have supported class methods', () => {
     const stub = { test: 'foo' } as unknown as DurableObjectStub;
     const fetcher = (stub: any, config: RequestConfig) => {
-      console.log(stub, config);
+      throw Error('should not be called in this test');
     };
     const methods = getClassMethods(TestDO.prototype);
-    const handler = getProxyClassHandler(methods, stub, fetcher);
+    const handler = getProxyClassHandler(methods, fetcher);
+    handler.setStub(stub);
 
     expect(Object.keys(handler.methods)).toEqual(Array.from(methods));
   });
@@ -34,7 +35,8 @@ describe('getProxyClassHandler', () => {
       };
     };
     const methods = getClassMethods(TestDO.prototype);
-    const handler = getProxyClassHandler(methods, stub, fetcher);
+    const handler = getProxyClassHandler(methods, fetcher);
+    handler.setStub(stub);
 
     const res = await handler.methods.getStorage(['test']);
     expect(res).toEqual({
@@ -56,7 +58,8 @@ describe('getProxyClassHandler', () => {
       };
     };
     const methods = getClassMethods(TestDO.prototype);
-    const handler = getProxyClassHandler(methods, stub, fetcher);
+    const handler = getProxyClassHandler(methods, fetcher);
+    handler.setStub(stub);
     handler.setMode('batch');
 
     const res = await handler.methods.funcWithoutAsync('key');

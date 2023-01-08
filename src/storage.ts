@@ -26,8 +26,7 @@ export const storageMethods: SupportedStorageMethods[] = [
 export type Storage = Pick<DurableObjectStorage, SupportedStorageMethods>;
 
 export function getProxyStorageHandler(
-  stub: DurableObjectStub,
   fetcher: (stub: DurableObjectStub, config: RequestConfig) => any
 ) {
-  return getProxyMethodHandler('storage', storageMethods, stub, fetcher);
+  return getProxyMethodHandler('storage', storageMethods, fetcher);
 }
