@@ -14,8 +14,21 @@ class Test extends DOProxy {
 }
 
 const start = process.hrtime.bigint();
-console.time(`#wrap`);
-for (let i = 0, l = 1000000; i < l; i++) {
-  Test.wrap({});
+console.time(`DurableObjectNameSpaceProxy.get`);
+for (let i = 0, l = 100000; i < l; i++) {
+  const TEST = Test.wrap({
+    get() {
+      return {
+        fetch() {},
+        id: {
+          toString() {
+            return 'id';
+          },
+          name: 'id',
+        },
+      };
+    },
+  });
+  TEST.get('test');
 }
-console.timeEnd(`#wrap`);
+console.timeEnd(`DurableObjectNameSpaceProxy.get`);
