@@ -15,7 +15,7 @@ class Test extends DOProxy {
 
 const start = process.hrtime.bigint();
 console.time(`#wrap`);
-for (let i = 0, l = 10000; i < l; i++) {
+for (let i = 0, l = 1000000; i < l; i++) {
   Test.wrap({});
 }
 console.timeEnd(`#wrap`);
