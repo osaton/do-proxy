@@ -21,9 +21,9 @@
     "url": "https://github.com/osaton/do-proxy"
   },
   "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
+    "entry": {
+      "do-proxy": "src/index.ts"
+    },
     "splitting": false,
     "sourcemap": true,
     "clean": true,
