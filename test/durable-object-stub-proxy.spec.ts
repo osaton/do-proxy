@@ -95,7 +95,9 @@ describe('DurableObjectStubProxy', () => {
       const DO = TestDO.wrap(TEST_DO);
       stubTest = DO.get(DO.newUniqueId());
       await stubTest.class.funcWithoutAsync();
-      expect(Object.keys(stubTest.class)).toEqual(['getStorage', 'setStorage', 'funcWithoutAsync']);
+      expect(Object.keys(stubTest.class).sort()).toEqual(
+        ['getStorage', 'setStorage', 'funcWithoutAsync'].sort()
+      );
       expect(typeof stubTest.class.funcWithoutAsync).toEqual('function');
     });
 

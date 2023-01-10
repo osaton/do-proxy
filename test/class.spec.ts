@@ -1,6 +1,7 @@
 import { getClassMethods, getProxyClassHandler } from '../src/class';
 import { TestDO } from '../worker/test-do';
 import { RequestConfig } from '../src/request-config';
+import { DOProxy } from '../src';
 
 describe('getClassMethods', () => {
   it('should get defined functions from prototype', () => {
@@ -9,6 +10,30 @@ describe('getClassMethods', () => {
     set.add('setStorage');
     set.add('getStorage');
     set.add('funcWithoutAsync');
+    expect(methods).toEqual(set);
+  });
+
+  it('should handle extended classes', () => {
+    class Base extends DOProxy {
+      prop1 = 'string';
+      func() {}
+    }
+
+    class Extended extends Base {
+      prop2 = 'string';
+      func2() {}
+    }
+
+    class DoubleExtended extends Extended {
+      prop3 = 'string';
+      func3() {}
+    }
+
+    let methods = getClassMethods(DoubleExtended.prototype);
+    const set = new Set();
+    set.add('func');
+    set.add('func2');
+    set.add('func3');
     expect(methods).toEqual(set);
   });
 });

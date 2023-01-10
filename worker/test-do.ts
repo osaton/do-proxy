@@ -1,11 +1,9 @@
 import { DOProxy } from '../src/do-proxy';
 import { Env } from './index';
 
-export class TestDO extends DOProxy {
+class Base extends DOProxy {
   env: Env;
   state: DurableObjectState;
-  publicProperty = true;
-
   constructor(state: DurableObjectState, env: Env) {
     super(state);
     this.state = state;
@@ -17,18 +15,20 @@ export class TestDO extends DOProxy {
 
     return res;
   }
+}
 
+// Extend extended, parent methods should be available in tests
+class Extended extends Base {
   async setStorage(data: string, data2: string, data3: string) {
     this.state.storage.put('test', data + data2 + data3);
   }
+}
 
+// Extend extended, parent methods should be available in tests
+export class TestDO extends Extended {
+  publicProperty = true;
   funcWithoutAsync() {
     return ['foo'];
   }
-
-  get test() {
-    return 'foo';
-  }
-
   set test(val: string) {}
 }

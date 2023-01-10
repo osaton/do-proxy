@@ -12,18 +12,19 @@ export function getProxyClassHandler<T extends Set<string>>(
 export function getClassMethods<T extends DOProxy>(proto: T) {
   const exclude = ['constructor', 'fetch'];
   const methods: Set<string> = new Set();
-  let o = proto;
+  let o: T | null = proto;
   while (o !== null) {
     for (let name of Object.getOwnPropertyNames(o)) {
-      if (
-        !exclude.includes(name) &&
-        typeof (proto as any)[name] === 'function' &&
-        proto.hasOwnProperty(name)
-      ) {
+      if (!exclude.includes(name) && typeof (proto as any)[name] === 'function') {
         methods.add(name);
       }
     }
     o = Object.getPrototypeOf(o);
+
+    // If we have reached Object's prototype it's time to stop
+    if (Object.prototype === o) {
+      o = null;
+    }
   }
-  return methods as Set<string>;
+  return methods;
 }
