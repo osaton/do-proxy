@@ -1,3 +1,10 @@
+## [1.3.3](https://github.com/osaton/do-proxy/compare/v1.3.2...v1.3.3) (2023-01-10)
+
+
+### Bug Fixes
+
+* extract methods also from parent prototypes ([ff22646](https://github.com/osaton/do-proxy/commit/ff2264630d8bf8196c41393337a45216901b0f53)), closes [#10](https://github.com/osaton/do-proxy/issues/10)
+
 ## [1.3.2](https://github.com/osaton/do-proxy/compare/v1.3.1...v1.3.2) (2023-01-08)
 
 
