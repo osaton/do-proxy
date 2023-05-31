@@ -8,6 +8,7 @@ const MODULE_NAME = 'do-proxy';
 declare abstract class DurableObjectNamespaceProxyClass<T>
   implements Omit<DurableObjectNamespace, 'get'>
 {
+  jurisdiction(jurisdiction: DurableObjectJurisdiction): DurableObjectNamespace;
   newUniqueId(options?: DurableObjectNamespaceNewUniqueIdOptions | undefined): DurableObjectId;
   idFromName(name: string): DurableObjectId;
   idFromString(id: string): DurableObjectId;

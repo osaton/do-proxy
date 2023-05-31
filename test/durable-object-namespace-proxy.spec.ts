@@ -9,6 +9,8 @@ describe('DurableObjectNamespaceProxy', () => {
     const idFromStr = DO.idFromString(id.toString());
     expect(id).toEqual(idFromStr);
 
+    expect(DO.jurisdiction('eu')).toEqual(DO);
+
     const idFromName = DO.idFromName('test');
     const stub = DO.get(idFromName);
     const stub2 = DO.get(id);
