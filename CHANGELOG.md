@@ -1,3 +1,11 @@
+## [1.3.4](https://github.com/osaton/do-proxy/compare/v1.3.3...v1.3.4) (2023-05-31)
+
+
+### Bug Fixes
+
+* add `DurableObjectNamespace.jurisdiction` types ([4866f7e](https://github.com/osaton/do-proxy/commit/4866f7e2804b513d080bbecd5ad5356f421de2a4))
+* **deps:** bump http-cache-semantics from 4.1.0 to 4.1.1 ([3cf49fe](https://github.com/osaton/do-proxy/commit/3cf49febcefba61cfa2d8d436df5eba410039c07))
+
 ## [1.3.3](https://github.com/osaton/do-proxy/compare/v1.3.2...v1.3.3) (2023-01-10)
 
 
