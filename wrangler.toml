@@ -1,6 +1,6 @@
 name = "do-api"
 compatibility_date = "2022-11-26"
-main = "worker-dist/index.mjs"
+main = "dist-worker/index.mjs"
 
 [durable_objects]
 bindings = [
